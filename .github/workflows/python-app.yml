@@ -37,11 +37,13 @@ jobs:
 
       - name: Install Tesseract OCR silently
         run: |
-          Start-Process .\tesseract-installer.exe -ArgumentList "/S /D=D:\a\translation\translation\dist\translation\tesseract" -Wait
+          $targetDir = "${{ github.workspace }}\dist\translation\tesseract"
+          mkdir $targetDir -Force
+          Start-Process .\tesseract-installer.exe -ArgumentList "/S /D=$targetDir" -Wait
 
       - name: Download traineddata files
         run: |
-          dir -Recurse
+          dir dist -Recurse
           curl -L -o dist/translation/tesseract/tessdata/eng.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
           curl -L -o dist/translation/tesseract/tessdata/chi_sim.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/chi_sim.traineddata
 
