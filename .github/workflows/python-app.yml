@@ -37,11 +37,10 @@ jobs:
 
       - name: Install Tesseract OCR silently
         run: |
-          Start-Process .\tesseract-installer.exe -ArgumentList "/S /D=dist\translation\tesseract" -Wait
+          Start-Process .\tesseract-installer.exe -ArgumentList "/S /D=D:\a\translation\translation\dist\translation\tesseract" -Wait
 
       - name: Download traineddata files
         run: |
-          mkdir dist/translation/tesseract/tessdata
           dir -Recurse
           curl -L -o dist/translation/tesseract/tessdata/eng.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
           curl -L -o dist/translation/tesseract/tessdata/chi_sim.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/chi_sim.traineddata
