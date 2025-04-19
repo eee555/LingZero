@@ -43,7 +43,7 @@ jobs:
 
       - name: Download traineddata files
         run: |
-          dir dist -Recurse
+          dir dist/translation/tesseract -Recurse
           curl -L -o dist/translation/tesseract/tessdata/eng.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
           curl -L -o dist/translation/tesseract/tessdata/chi_sim.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/chi_sim.traineddata
 
