@@ -1,0 +1,6 @@
+PySide6>=6.9.0
+pytesseract>=0.3.13
+Pillow>=10.2.0
+pynput>=1.8.1
+keyboard>=0.13.5
+argostranslate>=1.9.6
