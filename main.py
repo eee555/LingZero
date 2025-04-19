@@ -1,18 +1,17 @@
 import sys
 import pytesseract
-pytesseract.pytesseract.tesseract_cmd = r'D:\Tesseract-OCR\tesseract.exe'
-from PIL import ImageGrab
-from PySide6.QtCore import Qt, QRect, QPoint, QTimer, Signal, QEvent
-from PySide6.QtGui import (QGuiApplication, QPainter, QColor, QIcon, QImage,
-                           QKeySequence, QShortcut, QCursor, QMouseEvent)
+# 打包
+pytesseract.pytesseract.tesseract_cmd = r'tesseract\tesseract.exe'
+# 开发
+# pytesseract.pytesseract.tesseract_cmd = r'D:\Tesseract-OCR\tesseract.exe'
+from PySide6.QtCore import Qt, QRect, QPoint, Signal, QEvent
+from PySide6.QtGui import (QGuiApplication, QPainter, QColor, QCursor, QMouseEvent)
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QDialog,
-                                QSystemTrayIcon, QMenu, QLabel, QStyle,
-                                QGraphicsDropShadowEffect, QVBoxLayout)
+                                QSystemTrayIcon, QMenu, QLabel, QStyle, QVBoxLayout)
 from pynput import mouse
 import keyboard
 from PIL import Image
 import ctypes
-import ctypes.wintypes as wintypes
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
 

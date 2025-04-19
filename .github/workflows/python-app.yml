@@ -1,0 +1,52 @@
+name: Python application
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          if (Test-Path requirements.txt) { pip install -r requirements.txt }
+
+      - name: Package with PyInstaller
+        run: |
+          pyinstaller -w main.py
+
+      - name: Download Tesseract OCR from release
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/tesseract-ocr/tesseract/releases/download/5.5.0/tesseract-ocr-w64-setup-5.5.0.20241111.exe" -OutFile tesseract-installer.exe
+
+      - name: Install Tesseract OCR silently
+        run: |
+          Start-Process .\tesseract-installer.exe -ArgumentList "/S /D=dist\tesseract" -Wait
+
+
+
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: translation
+          path: dist/
+
+
+
