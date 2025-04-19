@@ -29,7 +29,7 @@ jobs:
 
       - name: Package with PyInstaller
         run: |
-          pyinstaller -w main.py
+          pyinstaller -w main.py --onedir --noconfirm --name translation
 
       - name: Download Tesseract OCR from release
         run: |
@@ -37,16 +37,24 @@ jobs:
 
       - name: Install Tesseract OCR silently
         run: |
-          Start-Process .\tesseract-installer.exe -ArgumentList "/S /D=dist\tesseract" -Wait
+          Start-Process .\tesseract-installer.exe -ArgumentList "/S /D=dist\translation\tesseract" -Wait
+
+      - name: Download traineddata files
+        run: |
+          curl -L -o dist/translation/tesseract/tessdata/eng.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
+          curl -L -o dist/translation/tesseract/tessdata/chi_sim.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/chi_sim.traineddata
 
 
+      - name: List files
+        run: |
+          dir -Recurse
 
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: translation
-          path: dist/
+          path: dist/translation
 
 
 
