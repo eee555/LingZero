@@ -231,8 +231,9 @@ class ScreenShotWindow(QDialog):
                 t = t.replace("\n", " ")
                 translated_texts.append(argostranslate.translate.translate(t, "en", "zh"))
             translated_text = "\n\n".join(translated_texts)
-        except:
-            translated_text = "翻译出错！"
+        except Exception as e:
+            import traceback
+            translated_text = traceback.format_exc()
         if not is_more_than_60_percent_english(text):
             return
         self.textWindow = TextWindow(text, translated_text, rect)
