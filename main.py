@@ -1,9 +1,9 @@
 import sys
 import pytesseract
 # 打包
-pytesseract.pytesseract.tesseract_cmd = r'tesseract\tesseract.exe'
+# pytesseract.pytesseract.tesseract_cmd = r'tesseract\tesseract.exe'
 # 开发
-# pytesseract.pytesseract.tesseract_cmd = r'D:\Tesseract-OCR\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = r'D:\Tesseract-OCR\tesseract.exe'
 from PySide6.QtCore import Qt, QRect, QPoint, Signal, QEvent
 from PySide6.QtGui import (QGuiApplication, QPainter, QColor, QCursor, QMouseEvent)
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QDialog,
@@ -60,12 +60,12 @@ class TextWindow(QWidget):
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         self.content = QLabel(self)
-        self.content.setMaximumWidth(300)
         if self.position:
             pad = min(self.position.width(), self.position.height())
             pad = int(pad / 10)
             pad = min(pad, 10)
         else:
+            self.content.setMaximumWidth(300)
             pad = 3
         self.content.setStyleSheet(f"background: #fef9e7; border-radius: 4px; padding: {pad}px;")
         
@@ -101,9 +101,9 @@ class TextWindow(QWidget):
     def switch(self):
         if self.trans_flag:
             self.content.setText(self.raw_text)
-            self.adjustSize()
         else:
             self.content.setText(self.trans_text)
+        if not self.position:
             self.adjustSize()
         self.trans_flag = not self.trans_flag
 
