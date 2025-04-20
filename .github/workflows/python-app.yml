@@ -1,14 +1,3 @@
-name: Python application
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-permissions:
-  contents: read
-
 jobs:
   build:
     runs-on: windows-latest
@@ -27,37 +16,37 @@ jobs:
           pip install pyinstaller
           if (Test-Path requirements.txt) { pip install -r requirements.txt }
 
-      - name: Package with PyInstaller
+      - name: Download Tesseract
         run: |
-          pyinstaller -w main.py --onedir --noconfirm --name translation
-
-      - name: Download Tesseract OCR from release
-        run: |
-          Invoke-WebRequest -Uri "https://github.com/tesseract-ocr/tesseract/releases/download/5.5.0/tesseract-ocr-w64-setup-5.5.0.20241111.exe" -OutFile tesseract-installer.exe
-
-      - name: Install Tesseract OCR silently
-        run: |
-          $targetDir = "${{ github.workspace }}\dist\translation\tesseract"
-          mkdir $targetDir -Force
-          Start-Process .\tesseract-installer.exe -ArgumentList "/S /D=$targetDir" -Wait
-
-      - name: Download traineddata files
-        run: |
-          dir dist/translation/tesseract -Recurse
-          curl -L -o dist/translation/tesseract/tessdata/eng.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
-          curl -L -o dist/translation/tesseract/tessdata/chi_sim.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/chi_sim.traineddata
-
-
-      - name: List files
-        run: |
+          $url = "https://github.com/tesseract-ocr/tesseract/releases/download/5.5.0/tesseract-ocr-w64-setup-5.5.0.20241111.exe"
+          Invoke-WebRequest -Uri $url -OutFile tesseract-installer.exe
           dir -Recurse
 
+      - name: Install Tesseract
+        run: |
+          $tesseractDir = "$env:GITHUB_WORKSPACE/tesseract"
+          New-Item -Path $tesseractDir -ItemType Directory -Force
+          Start-Process .\tesseract-installer.exe -ArgumentList "/S", "/D=$tesseractDir" -Wait
 
-      - name: Upload artifact
+      - name: Download Language Data
+        run: |
+          $tessdata = "$tesseractDir/tessdata"
+          New-Item -Path $tessdata -ItemType Directory -Force
+          Invoke-WebRequest -Uri "https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata" -OutFile "$tessdata/eng.traineddata"
+          Invoke-WebRequest -Uri "https://github.com/tesseract-ocr/tessdata/raw/main/chi_sim.traineddata" -OutFile "$tessdata/chi_sim.traineddata"
+          dir -Recurse
+
+      - name: Package Application
+        run: |
+          pyinstaller -w main.py `
+            --add-data "$tesseractDir;tesseract" `
+            --onedir `
+            --noconfirm `
+            --name translation
+
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: translation
           path: dist/translation
-
-
 
