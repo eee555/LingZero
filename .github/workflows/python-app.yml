@@ -38,6 +38,7 @@ jobs:
           $tesseractDir = "$env:GITHUB_WORKSPACE/tesseract"
           New-Item -Path $tesseractDir -ItemType Directory -Force
           Start-Process .\tesseract-installer.exe -ArgumentList "/S", "/D=$tesseractDir" -Wait
+          dir -Recurse
 
       - name: Download Language Data
         run: |
