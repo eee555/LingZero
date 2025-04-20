@@ -36,6 +36,9 @@ def is_more_than_60_percent_english(text):
     total_chars = len(text)
     if not text or total_chars > 10000:
         return False
+    # 复制了文件
+    if r"///" in text:
+        return False
     english_chars = sum(1 for char in text if char.isalpha() and ('a' <= char.lower() <= 'z'))
     percentage = english_chars / total_chars
     return percentage >= 0.6
@@ -223,10 +226,13 @@ class ScreenShotWindow(QDialog):
         text = pytesseract.image_to_string(pil_image, lang='eng').strip()
         texts = text.split("\n\n")
         translated_texts = []
-        for t in texts:
-            t = t.replace("\n", " ")
-            translated_texts.append(argostranslate.translate.translate(t, "en", "zh"))
-        translated_text = "\n\n".join(translated_texts)
+        try:
+            for t in texts:
+                t = t.replace("\n", " ")
+                translated_texts.append(argostranslate.translate.translate(t, "en", "zh"))
+            translated_text = "\n\n".join(translated_texts)
+        except:
+            translated_text = "翻译出错！"
         if not is_more_than_60_percent_english(text):
             return
         self.textWindow = TextWindow(text, translated_text, rect)
