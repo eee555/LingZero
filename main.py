@@ -16,9 +16,17 @@ user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
 
 
-import argostranslate.translate
+# import argostranslate.translate
+from argostranslate import translate
 # translated_text = argostranslate.translate.translate("why.", "en", "zh")
 
+langs = translate.get_installed_languages()
+if not langs:
+    from argostranslate import package
+    model_path = './translate-en_zh-1_9.argosmodel'  # 替换为你的模型文件路径
+    package.install_from_path(model_path)
+    langs = translate.get_installed_languages()
+translator = langs[0]
 
 
 # import argostranslate.package
@@ -229,7 +237,7 @@ class ScreenShotWindow(QDialog):
         try:
             for t in texts:
                 t = t.replace("\n", " ")
-                translated_texts.append(argostranslate.translate.translate(t, "en", "zh"))
+                translated_texts.append(translator.translate(t, "en", "zh"))
             translated_text = "\n\n".join(translated_texts)
         except Exception as e:
             import traceback
@@ -300,7 +308,7 @@ class TrayApp(QMainWindow):
         translated_texts = []
         for t in texts:
             t = t.replace("\n", " ")
-            translated_texts.append(argostranslate.translate.translate(t, "en", "zh"))
+            translated_texts.append(translator.translate(t, "en", "zh"))
         translated_text = "\n\n".join(translated_texts)
 
         if not is_more_than_60_percent_english(clipboard_text):
