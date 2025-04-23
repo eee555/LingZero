@@ -26,7 +26,10 @@ if not langs:
     model_path = './translate-en_zh-1_9.argosmodel'  # 替换为你的模型文件路径
     package.install_from_path(model_path)
     langs = translate.get_installed_languages()
-translator = langs[0]
+    
+source_lang = next(filter(lambda x: x.code == 'en', langs))
+target_lang = next(filter(lambda x: x.code == 'zh', langs))
+translator = source_lang.get_translation(target_lang)
 
 
 # import argostranslate.package
@@ -237,7 +240,7 @@ class ScreenShotWindow(QDialog):
         try:
             for t in texts:
                 t = t.replace("\n", " ")
-                translated_texts.append(translator.translate(t, "en", "zh"))
+                translated_texts.append(translator.translate(t))
             translated_text = "\n\n".join(translated_texts)
         except Exception as e:
             import traceback
@@ -308,7 +311,7 @@ class TrayApp(QMainWindow):
         translated_texts = []
         for t in texts:
             t = t.replace("\n", " ")
-            translated_texts.append(translator.translate(t, "en", "zh"))
+            translated_texts.append(translator.translate(t))
         translated_text = "\n\n".join(translated_texts)
 
         if not is_more_than_60_percent_english(clipboard_text):
