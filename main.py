@@ -1,4 +1,5 @@
 import sys
+import traceback
 import pytesseract
 # 打包
 pytesseract.pytesseract.tesseract_cmd = r'tesseract\tesseract.exe'
@@ -30,17 +31,6 @@ if not langs:
 source_lang = next(filter(lambda x: x.code == 'en', langs))
 target_lang = next(filter(lambda x: x.code == 'zh', langs))
 translator = source_lang.get_translation(target_lang)
-
-
-# import argostranslate.package
-# import argostranslate.translate
-# # 更新包索引
-# argostranslate.package.update_package_index()
-# # 获取可用的包
-# available_packages = argostranslate.package.get_available_packages()
-# # 选择并安装包
-# package_to_install = next(filter(lambda x: x.from_code == "en" and x.to_code == "zh", available_packages))
-# argostranslate.package.install_from_path(package_to_install.download())
 
 # 太长或太短，或英文占比没有达到60%，都不翻译
 def is_more_than_60_percent_english(text):
@@ -330,11 +320,16 @@ class TrayApp(QMainWindow):
         self.click_triggered.connect(self.shot_window.click_triggered)
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
-    # Windows任务栏图标设置
-    from ctypes import windll
-    windll.shell32.SetCurrentProcessExplicitAppUserModelID('myapp.ocr.v1')
-    main = TrayApp()
-    sys.exit(app.exec())
+    try:
+        app = QApplication(sys.argv)
+        app.setQuitOnLastWindowClosed(False)
+        # Windows任务栏图标设置
+        from ctypes import windll
+        windll.shell32.SetCurrentProcessExplicitAppUserModelID('myapp.ocr.v1')
+        main = TrayApp()
+        sys.exit(app.exec())
+    except:
+        error_info = traceback.format_exc()
+        with open('error.log', 'w', encoding='utf-8') as file:
+            file.write(error_info)
 
