@@ -230,16 +230,18 @@ class ScreenShotWindow(QDialog):
             byte_data,
             'raw', 'BGRX'  # 处理Qt的32-bit颜色格式
         )
-        pil_image.save('debug.png')
-        logging.debug(f'777')
-        text = pytesseract.image_to_string(pil_image, lang='eng').strip()
-        logging.debug(f'text：{text}')
+        try:
+            text = pytesseract.image_to_string(pil_image, lang='eng').strip()
+        except Exception as e:
+            logging.error(f"OCR识别失败: {e}")
+            import traceback
+            traceback_text = traceback.format_exc()
+            logging.debug(f'traceback_text：{traceback_text}')
         if not is_more_than_60_percent_english(text):
             logging.debug(f'is_more_than_60_percent_english')
             return
         texts = text.split("\n\n")
         translated_texts = []
-        logging.debug(f'888')
         try:
             for t in texts:
                 t = t.replace("\n", " ")
