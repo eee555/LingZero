@@ -1,7 +1,9 @@
 import sys, os
-import configparser
+import configparser, json
 config = configparser.ConfigParser()
 config.read('config.ini', encoding="utf-8")
+with open("./ecdict.json", 'r', encoding='utf-8') as f:
+    ecdict = json.load(f)
 import pytesseract
 # 判断是开发环境还是生产环境
 if os.path.exists("./.github"):
@@ -35,16 +37,19 @@ target_lang = next(filter(lambda x: x.code == 'zh', langs))
 translator = source_lang.get_translation(target_lang)
 
 # 太长或太短，或英文占比没有达到60%，都不翻译
-def is_more_than_60_percent_english(text):
+def is_more_than_60_percent_english(text) -> str:
     total_chars = len(text)
     if not text or total_chars > 10000:
-        return False
+        return ""
     # 复制了文件
     if r"///" in text:
-        return False
+        return ""
     english_chars = sum(1 for char in text if char.isalpha() and ('a' <= char.lower() <= 'z'))
     percentage = english_chars / total_chars
-    return percentage >= 0.6
+    if percentage >= 0.6:
+        return text.strip("' \"[](){}")
+    else:
+        return ""
 
 # 翻译弹窗，用于展示翻译结果
 class TextWindow(QWidget):
@@ -223,16 +228,19 @@ class ScreenShotWindow(QDialog):
         text = pytesseract.image_to_string(pil_image, lang='eng').strip()
         if not is_more_than_60_percent_english(text):
             return
-        texts = text.split("\n\n")
-        translated_texts = []
-        try:
-            for t in texts:
-                t = t.replace("\n", " ")
-                translated_texts.append(translator.translate(t))
-            translated_text = "\n\n".join(translated_texts)
-        except:
-            import traceback
-            translated_text = traceback.format_exc()
+        if text in ecdict:
+            translated_text = ecdict[text].replace("\\n", "\n")
+        else:
+            texts = text.split("\n\n")
+            translated_texts = []
+            try:
+                for t in texts:
+                    t = t.replace("\n", " ")
+                    translated_texts.append(translator.translate(t))
+                translated_text = "\n\n".join(translated_texts)
+            except:
+                import traceback
+                translated_text = traceback.format_exc()
         self.textWindow = TextWindow(text, translated_text, rect)
         self.textWindow.show()
         self.esc_triggered.connect(self.textWindow.close)
@@ -295,15 +303,17 @@ class TrayApp(QMainWindow):
         if self.stop_trans:
             return
         clipboard_text = self.clipboard.text().strip()
-        texts = clipboard_text.split("\n\n")
-        translated_texts = []
-        for t in texts:
-            t = t.replace("\n", " ")
-            translated_texts.append(translator.translate(t))
-        translated_text = "\n\n".join(translated_texts)
-
         if not is_more_than_60_percent_english(clipboard_text):
             return
+        if clipboard_text in ecdict:
+            translated_text = ecdict[clipboard_text].replace("\\n", "\n")
+        else:
+            texts = clipboard_text.split("\n\n")
+            translated_texts = []
+            for t in texts:
+                t = t.replace("\n", " ")
+                translated_texts.append(translator.translate(t))
+            translated_text = "\n\n".join(translated_texts)
         self.textWindow = TextWindow(clipboard_text, translated_text)
         self.textWindow.show()
         self.esc_triggered.connect(self.textWindow.close)
