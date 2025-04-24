@@ -3,10 +3,10 @@ import pytesseract
 # 判断是开发环境还是生产环境
 if os.path.exists("./.github"):
     pytesseract.pytesseract.tesseract_cmd = r'D:/Tesseract-OCR/tesseract.exe'
-    os.environ["TESSDATA_PREFIX"] = r'D:/Tesseract-OCR'
+    os.environ["TESSDATA_PREFIX"] = r'D:/Tesseract-OCR/tessdata'
 else:
     pytesseract.pytesseract.tesseract_cmd = r'./tesseract/tesseract.exe'
-    os.environ["TESSDATA_PREFIX"] = r'./tesseract'
+    os.environ["TESSDATA_PREFIX"] = r'./tesseract/tessdata'
 from PySide6.QtCore import Qt, QRect, QPoint, Signal, QEvent
 from PySide6.QtGui import (QGuiApplication, QPainter, QColor, QCursor, QMouseEvent)
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QDialog,
