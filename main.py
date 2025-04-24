@@ -18,15 +18,7 @@ import ctypes
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
 
-import logging
-logging.basicConfig(format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s',
-                    level=logging.DEBUG,
-                    filename='debug.log',
-                    filemode='a')
-
-# import argostranslate.translate
 from argostranslate import translate
-# translated_text = argostranslate.translate.translate("why.", "en", "zh")
 
 langs = translate.get_installed_languages()
 if not langs:
@@ -54,7 +46,6 @@ def is_more_than_60_percent_english(text):
 class TextWindow(QWidget):
     def __init__(self, raw_text, trans_text, position: QRect = None, parent=None):
         super(TextWindow, self).__init__(parent=parent)
-        logging.debug(f'TextWindow: {raw_text} -> {trans_text}')
         self.trans_text = trans_text
         self.raw_text = raw_text
         self.position = position
@@ -65,7 +56,6 @@ class TextWindow(QWidget):
         
 
     def setup_ui(self):
-        # self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         
         self.setAttribute(Qt.WA_TranslucentBackground)
@@ -90,19 +80,12 @@ class TextWindow(QWidget):
         self.trans_flag = True
         layout.addWidget(self.content)
         self.setLayout(layout)
-
         self.drag_pos = None
-
-        
         if self.position:
             self.setGeometry(self.position)
         else:
             mouse_pos = QCursor.pos()
             self.setFixedWidth(300)
-            # label_size_hint = self.content.sizeHint()
-            # height = label_size_hint.height() + layout.contentsMargins().top() + layout.contentsMargins().bottom()
-            # rect = QRect(mouse_pos.x(), mouse_pos.y(), 300, height)
-            # self.setGeometry(rect)
             self.move(mouse_pos)
 
         self.update()
@@ -232,15 +215,8 @@ class ScreenShotWindow(QDialog):
             byte_data,
             'raw', 'BGRX'  # 处理Qt的32-bit颜色格式
         )
-        try:
-            text = pytesseract.image_to_string(pil_image, lang='eng').strip()
-        except Exception as e:
-            logging.error(f"OCR识别失败: {e}")
-            import traceback
-            traceback_text = traceback.format_exc()
-            logging.debug(f'traceback_text：{traceback_text}')
+        text = pytesseract.image_to_string(pil_image, lang='eng').strip()
         if not is_more_than_60_percent_english(text):
-            logging.debug(f'is_more_than_60_percent_english')
             return
         texts = text.split("\n\n")
         translated_texts = []
@@ -252,11 +228,9 @@ class ScreenShotWindow(QDialog):
         except Exception as e:
             import traceback
             translated_text = "报错：" + translated_text + ", " + traceback.format_exc()
-        logging.debug(f'999')
         self.textWindow = TextWindow(text, translated_text, rect)
         self.textWindow.show()
         self.esc_triggered.connect(self.textWindow.close)
-        logging.debug(f'111')
         self.click_triggered.connect(self.textWindow.mouseClick)
 
 class TrayApp(QMainWindow):
@@ -270,8 +244,6 @@ class TrayApp(QMainWindow):
         # self.tray.setIcon(QIcon("icon.png"))
         default_icon = QApplication.style().standardIcon(QStyle.SP_ComputerIcon)
         self.tray.setIcon(default_icon)
-
-        
         menu = QMenu()
         menu.setStyleSheet("""
             QMenu::item {
@@ -300,7 +272,6 @@ class TrayApp(QMainWindow):
         self.clipboard = QApplication.clipboard()
         # 连接剪贴板的 dataChanged 信号到槽函数
         self.clipboard.dataChanged.connect(self.clipboard_changed_triggered.emit)
-
 
         def on_click_wrapper(x, y, button, pressed):
             self.click_triggered.emit(x, y, button.name, pressed)
