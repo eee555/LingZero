@@ -16,6 +16,11 @@ import ctypes
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
 
+import logging
+logging.basicConfig(format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s',
+                    level=logging.DEBUG,
+                    filename='debug.log',
+                    filemode='a')
 
 # import argostranslate.translate
 from argostranslate import translate
@@ -47,6 +52,7 @@ def is_more_than_60_percent_english(text):
 class TextWindow(QWidget):
     def __init__(self, raw_text, trans_text, position: QRect = None, parent=None):
         super(TextWindow, self).__init__(parent=parent)
+        logging.debug(f'TextWindow: {raw_text} -> {trans_text}')
         self.trans_text = trans_text
         self.raw_text = raw_text
         self.position = position
@@ -211,22 +217,30 @@ class ScreenShotWindow(QDialog):
     def capture_selected_area(self):
         # 获取选中的矩形区域
         rect = QRect(self.start_point, self.end_point).normalized()
+        logging.debug(f'444')
         # 截取屏幕图像
         screen = QGuiApplication.primaryScreen()
         if rect.width() < 5 or rect.height() < 5:
+            logging.debug(f'width: {rect.width()}; height: {rect.height()}')
             return
         screenshot = screen.grabWindow(0, rect.x(), rect.y(), rect.width(), rect.height())
         qimage = screenshot.toImage()
         byte_data = qimage.constBits().tobytes()
+        logging.debug(f'666')
         pil_image = Image.frombytes(
             "RGB", 
             (qimage.width(), qimage.height()),
             byte_data,
             'raw', 'BGRX'  # 处理Qt的32-bit颜色格式
         )
+        logging.debug(f'777')
         text = pytesseract.image_to_string(pil_image, lang='eng').strip()
+        if not is_more_than_60_percent_english(text):
+            logging.debug(f'is_more_than_60_percent_english')
+            return
         texts = text.split("\n\n")
         translated_texts = []
+        logging.debug(f'888')
         try:
             for t in texts:
                 t = t.replace("\n", " ")
@@ -235,11 +249,11 @@ class ScreenShotWindow(QDialog):
         except Exception as e:
             import traceback
             translated_text = "报错：" + translated_text + ", " + traceback.format_exc()
-        if not is_more_than_60_percent_english(text):
-            return
+        logging.debug(f'999')
         self.textWindow = TextWindow(text, translated_text, rect)
         self.textWindow.show()
         self.esc_triggered.connect(self.textWindow.close)
+        logging.debug(f'111')
         self.click_triggered.connect(self.textWindow.mouseClick)
 
 class TrayApp(QMainWindow):
