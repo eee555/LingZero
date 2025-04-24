@@ -217,24 +217,23 @@ class ScreenShotWindow(QDialog):
     def capture_selected_area(self):
         # 获取选中的矩形区域
         rect = QRect(self.start_point, self.end_point).normalized()
-        logging.debug(f'444')
         # 截取屏幕图像
         screen = QGuiApplication.primaryScreen()
         if rect.width() < 5 or rect.height() < 5:
-            logging.debug(f'width: {rect.width()}; height: {rect.height()}')
             return
         screenshot = screen.grabWindow(0, rect.x(), rect.y(), rect.width(), rect.height())
         qimage = screenshot.toImage()
         byte_data = qimage.constBits().tobytes()
-        logging.debug(f'666')
         pil_image = Image.frombytes(
             "RGB", 
             (qimage.width(), qimage.height()),
             byte_data,
             'raw', 'BGRX'  # 处理Qt的32-bit颜色格式
         )
+        pil_image.save('debug.png')
         logging.debug(f'777')
         text = pytesseract.image_to_string(pil_image, lang='eng').strip()
+        logging.debug(f'text：{text}')
         if not is_more_than_60_percent_english(text):
             logging.debug(f'is_more_than_60_percent_english')
             return
