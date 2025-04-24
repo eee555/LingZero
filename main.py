@@ -1,4 +1,7 @@
 import sys, os
+import configparser
+config = configparser.ConfigParser()
+config.read('config.ini', encoding="utf-8")
 import pytesseract
 # 判断是开发环境还是生产环境
 if os.path.exists("./.github"):
@@ -68,9 +71,9 @@ class TextWindow(QWidget):
             pad = int(pad / 10)
             pad = min(pad, 10)
         else:
-            self.content.setMaximumWidth(300)
+            self.content.setMaximumWidth(config.getint('DEFAULT', 'copy_trans_fixed_width'))
             pad = 3
-        self.content.setStyleSheet(f"background: #fef9e7; border-radius: 4px; padding: {pad}px;")
+        self.content.setStyleSheet(f"{config.get('DEFAULT', 'background_style')}padding: {pad}px;")
         
         if len(self.trans_text) > 30:
             self.content.setAlignment(Qt.AlignLeft)
@@ -86,7 +89,7 @@ class TextWindow(QWidget):
             self.setGeometry(self.position)
         else:
             mouse_pos = QCursor.pos()
-            self.setFixedWidth(300)
+            self.setFixedWidth(config.getint('DEFAULT', 'copy_trans_fixed_width'))
             self.move(mouse_pos)
 
         self.update()
@@ -254,10 +257,10 @@ class TrayApp(QMainWindow):
                 icon: none;
             }
         """)
-        capture_action = menu.addAction("截屏翻译（ctrl+space）")
-        capture_action.triggered.connect(self.capture)
-        capture_action = menu.addAction("禁用/启用复制翻译（ctrl+1）")
-        capture_action.triggered.connect(self.on_hotkey_stoptrans)
+        a = menu.addAction(f"截屏翻译（{config.get('DEFAULT', 'capture_triggered_hotkey')}）")
+        a.triggered.connect(self.capture)
+        a = menu.addAction(f"禁用复制翻译（{config.get('DEFAULT', 'stoptrans_triggered_hotkey')}）")
+        a.triggered.connect(self.on_hotkey_stoptrans)
         exit_action = menu.addAction("退出")
         exit_action.triggered.connect(QApplication.quit)
         
@@ -267,9 +270,13 @@ class TrayApp(QMainWindow):
         self.capture_triggered.connect(self.capture)
         self.clipboard_changed_triggered.connect(self.clipboard_changed_trans)
 
-        keyboard.add_hotkey('ctrl+space', self.capture_triggered.emit)
+        capture_triggered_hotkeys = config.get('DEFAULT', 'capture_triggered_hotkey').split(",")
+        for hotkey in capture_triggered_hotkeys:
+            keyboard.add_hotkey(hotkey, self.capture_triggered.emit)
         self.stop_trans = False
-        keyboard.add_hotkey('ctrl+1', self.on_hotkey_stoptrans)
+        stoptrans_triggered_hotkeys = config.get('DEFAULT', 'stoptrans_triggered_hotkey').split(",")
+        for hotkey in stoptrans_triggered_hotkeys:
+            keyboard.add_hotkey(hotkey, self.on_hotkey_stoptrans)
         keyboard.add_hotkey('esc', self.esc_triggered.emit)
 
         self.clipboard = QApplication.clipboard()

@@ -27,33 +27,11 @@ jobs:
           pip install pyinstaller
           if (Test-Path requirements.txt) { pip install -r requirements.txt }
 
-      # - name: Download Tesseract
-      #   run: |
-      #     $url = "https://github.com/tesseract-ocr/tesseract/releases/download/5.5.0/tesseract-ocr-w64-setup-5.5.0.20241111.exe"
-      #     Invoke-WebRequest -Uri $url -OutFile tesseract-installer.exe
-      #     dir -Recurse
-
-      # - name: Install Tesseract
-      #   run: |
-      #     $tesseractDir = "$env:GITHUB_WORKSPACE/tesseract"
-      #     choco install tesseract -y
-      #     $src = "C:\ProgramData\chocolatey\lib\tesseract"
-      #     $dst = "${{ github.workspace }}\dist\tesseract"
-      #     mkdir $dst -Force
-      #     Copy-Item "$src\*" -Destination $dst -Recurse -Force
-      #     dir -Recurse
-
-      # - name: Download Language Data
-      #   run: |
-      #     $tessdata = "$tesseractDir/tessdata"
-      #     New-Item -Path $tessdata -ItemType Directory -Force
-      #     Invoke-WebRequest -Uri "https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata" -OutFile "$tessdata/eng.traineddata"
-      #     Invoke-WebRequest -Uri "https://github.com/tesseract-ocr/tessdata/raw/main/chi_sim.traineddata" -OutFile "$tessdata/chi_sim.traineddata"
-      #     dir -Recurse
-
       - name: Package Application
         run: |
           pyinstaller -w main.py `
+            -i "./a.ico" `
+            --add-data "./config.ini;." `
             --onedir `
             --noconfirm `
             --name translation
