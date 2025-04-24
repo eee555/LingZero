@@ -1,10 +1,10 @@
-import sys
-import traceback
+import sys, os
 import pytesseract
-# 打包
-pytesseract.pytesseract.tesseract_cmd = r'tesseract\tesseract.exe'
-# 开发
-# pytesseract.pytesseract.tesseract_cmd = r'D:\Tesseract-OCR\tesseract.exe'
+# 判断是开发环境还是生产环境
+if os.path.exists("./.github"):
+    pytesseract.pytesseract.tesseract_cmd = r'D:\Tesseract-OCR\tesseract.exe'
+else:
+    pytesseract.pytesseract.tesseract_cmd = r'tesseract\tesseract.exe'
 from PySide6.QtCore import Qt, QRect, QPoint, Signal, QEvent
 from PySide6.QtGui import (QGuiApplication, QPainter, QColor, QCursor, QMouseEvent)
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QDialog,
@@ -234,7 +234,7 @@ class ScreenShotWindow(QDialog):
             translated_text = "\n\n".join(translated_texts)
         except Exception as e:
             import traceback
-            translated_text = traceback.format_exc()
+            translated_text = "报错：" + translated_text + ", " + traceback.format_exc()
         if not is_more_than_60_percent_english(text):
             return
         self.textWindow = TextWindow(text, translated_text, rect)
@@ -320,16 +320,11 @@ class TrayApp(QMainWindow):
         self.click_triggered.connect(self.shot_window.click_triggered)
 
 if __name__ == "__main__":
-    try:
-        app = QApplication(sys.argv)
-        app.setQuitOnLastWindowClosed(False)
-        # Windows任务栏图标设置
-        from ctypes import windll
-        windll.shell32.SetCurrentProcessExplicitAppUserModelID('myapp.ocr.v1')
-        main = TrayApp()
-        sys.exit(app.exec())
-    except:
-        error_info = traceback.format_exc()
-        with open('error.log', 'w', encoding='utf-8') as file:
-            file.write(error_info)
+    app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
+    # Windows任务栏图标设置
+    from ctypes import windll
+    windll.shell32.SetCurrentProcessExplicitAppUserModelID('myapp.ocr.v1')
+    main = TrayApp()
+    sys.exit(app.exec())
 
