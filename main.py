@@ -43,6 +43,7 @@ def is_more_than_60_percent_english(text):
     percentage = english_chars / total_chars
     return percentage >= 0.6
 
+# 翻译弹窗，用于展示翻译结果
 class TextWindow(QWidget):
     def __init__(self, raw_text, trans_text, position: QRect = None, parent=None):
         super(TextWindow, self).__init__(parent=parent)
@@ -142,6 +143,7 @@ class TextWindow(QWidget):
             
         return super().eventFilter(obj, event)
 
+# 全屏的截屏窗口，半透明，鼠标拖动框选截屏区域
 class ScreenShotWindow(QDialog):
     esc_triggered = Signal()
     click_triggered = Signal(int, int, str, bool)
@@ -225,14 +227,15 @@ class ScreenShotWindow(QDialog):
                 t = t.replace("\n", " ")
                 translated_texts.append(translator.translate(t))
             translated_text = "\n\n".join(translated_texts)
-        except Exception as e:
+        except:
             import traceback
-            translated_text = "报错：" + translated_text + ", " + traceback.format_exc()
+            translated_text = traceback.format_exc()
         self.textWindow = TextWindow(text, translated_text, rect)
         self.textWindow.show()
         self.esc_triggered.connect(self.textWindow.close)
         self.click_triggered.connect(self.textWindow.mouseClick)
 
+# 主程序，启动后直接缩小到托盘
 class TrayApp(QMainWindow):
     capture_triggered = Signal()
     clipboard_changed_triggered = Signal()
