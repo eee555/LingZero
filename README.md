@@ -33,7 +33,8 @@ LingZero 能够为你带来截屏翻译 + 离线翻译的极致体验！没有�
 
 - Windows 10 / 11
 
-## 安装步骤
+## 👣 安装步骤
+
 1. 从[发行版](https://github.com/eee555/LingZero/releases)下载最新版，解压后放到合适的位置。
 2. 假如要使用腾讯翻译，新建"secret.ini"文件如下，前往[腾讯云官网](https://console.cloud.tencent.com/cam/capi)免费领取个人令牌，并写在文件中。
 ```
