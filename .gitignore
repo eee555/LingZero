@@ -175,3 +175,4 @@ cython_debug/
 *.argosmodel
 debug.png
 ecdict.csv
+secret.*

@@ -1,9 +1,7 @@
 import sys, os
-import configparser, json
+import configparser
 config = configparser.ConfigParser()
 config.read('config.ini', encoding="utf-8")
-with open("./ecdict.json", 'r', encoding='utf-8') as f:
-    ecdict = json.load(f)
 import pytesseract
 # 判断是开发环境还是生产环境
 if os.path.exists("./.github"):
@@ -23,50 +21,24 @@ import ctypes
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
 
-from argostranslate import translate
-
-langs = translate.get_installed_languages()
-if not langs:
-    from argostranslate import package
-    model_path = './translate-en_zh-1_9.argosmodel'  # 替换为你的模型文件路径
-    package.install_from_path(model_path)
-    langs = translate.get_installed_languages()
-    
-source_lang = next(filter(lambda x: x.code == 'en', langs))
-target_lang = next(filter(lambda x: x.code == 'zh', langs))
-translator = source_lang.get_translation(target_lang)
-
-# 太长或太短，或英文占比没有达到60%，都不翻译
-def is_more_than_60_percent_english(text) -> str:
-    total_chars = len(text)
-    if not text or total_chars > 10000:
-        return ""
-    # 复制了文件
-    if r"///" in text:
-        return ""
-    english_chars = sum(1 for char in text if char.isalpha() and ('a' <= char.lower() <= 'z'))
-    percentage = english_chars / total_chars
-    if percentage >= 0.6:
-        return text.strip("' \"[](){}")
-    else:
-        return ""
+from translator import Translator
+trans = Translator()
 
 # 翻译弹窗，用于展示翻译结果
 class TextWindow(QWidget):
-    def __init__(self, raw_text, trans_text, position: QRect = None, parent=None):
+    def __init__(self, raw_text, position: QRect = None, parent=None):
         super(TextWindow, self).__init__(parent=parent)
-        self.trans_text = trans_text
+        self.trans_text = ""
         self.raw_text = raw_text
         self.position = position
         self.setup_ui()
         QApplication.instance().installEventFilter(self)
         screen = QApplication.primaryScreen()
         self.scale_factor = screen.devicePixelRatio()
+        trans.set_ui(self)
         
-
     def setup_ui(self):
         self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-        
         self.setAttribute(Qt.WA_TranslucentBackground)
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -76,16 +48,10 @@ class TextWindow(QWidget):
             pad = int(pad / 10)
             pad = min(pad, 10)
         else:
-            self.content.setMaximumWidth(config.getint('DEFAULT', 'copy_trans_fixed_width'))
+            self.content.setFixedWidth(config.getint('DEFAULT', 'copy_trans_fixed_width'))
             pad = 3
         self.content.setStyleSheet(f"{config.get('DEFAULT', 'background_style')}padding: {pad}px;")
         
-        if len(self.trans_text) > 30:
-            self.content.setAlignment(Qt.AlignLeft)
-        else:
-            self.content.setAlignment(Qt.AlignCenter)
-        self.content.setWordWrap(True)
-        self.content.setText(self.trans_text)
         self.trans_flag = True
         layout.addWidget(self.content)
         self.setLayout(layout)
@@ -99,7 +65,23 @@ class TextWindow(QWidget):
 
         self.update()
         # 处理未处理的事件
-        QApplication.processEvents()
+        # QApplication.processEvents()
+
+    def update_result(self, trans_result):
+        self.trans_text = trans_result
+        if len(self.trans_text) > 30:
+            self.content.setAlignment(Qt.AlignLeft)
+        else:
+            self.content.setAlignment(Qt.AlignCenter)
+        self.content.setWordWrap(True)
+        if self.trans_flag:
+            self.content.setText(self.trans_text)
+        if not self.position:
+            hint_size = self.content.sizeHint()
+            self.setFixedHeight(hint_size.height())
+            self.setMinimumHeight(0)
+        self.layout().update()
+        self.update()
 
     # 切换原文/翻译
     def switch(self):
@@ -108,7 +90,12 @@ class TextWindow(QWidget):
         else:
             self.content.setText(self.trans_text)
         if not self.position:
-            self.adjustSize()
+            hint_size = self.content.sizeHint()
+            # 和self.content.setFixedHeight(hint_size.height())、self.content.setMinimumHeight(0)
+            # 相比，前者会向中间收缩，而窗口高度不变
+            # 首先设置固定尺寸，再设置最小尺寸，也就是取消固定尺寸，方便下次尺寸修改
+            self.setFixedHeight(hint_size.height())
+            self.setMinimumHeight(0)
         self.trans_flag = not self.trans_flag
 
     # 窗口拖动逻辑（保持不变）
@@ -141,7 +128,6 @@ class TextWindow(QWidget):
 
     # 全局事件过滤器
     def eventFilter(self, obj, event: QEvent):
-        # print(event)
         if event.type() == QEvent.WindowDeactivate:
             self.close()
 
@@ -226,22 +212,9 @@ class ScreenShotWindow(QDialog):
             'raw', 'BGRX'  # 处理Qt的32-bit颜色格式
         )
         text = pytesseract.image_to_string(pil_image, lang='eng').strip()
-        if not is_more_than_60_percent_english(text):
+        self.textWindow = TextWindow(text, rect)
+        if not trans.translate(text):
             return
-        if text in ecdict:
-            translated_text = ecdict[text].replace("\\n", "\n")
-        else:
-            texts = text.split("\n\n")
-            translated_texts = []
-            try:
-                for t in texts:
-                    t = t.replace("\n", " ")
-                    translated_texts.append(translator.translate(t))
-                translated_text = "\n\n".join(translated_texts)
-            except:
-                import traceback
-                translated_text = traceback.format_exc()
-        self.textWindow = TextWindow(text, translated_text, rect)
         self.textWindow.show()
         self.esc_triggered.connect(self.textWindow.close)
         self.click_triggered.connect(self.textWindow.mouseClick)
@@ -303,18 +276,9 @@ class TrayApp(QMainWindow):
         if self.stop_trans:
             return
         clipboard_text = self.clipboard.text().strip()
-        if not is_more_than_60_percent_english(clipboard_text):
+        self.textWindow = TextWindow(clipboard_text)
+        if not trans.translate(clipboard_text):
             return
-        if clipboard_text in ecdict:
-            translated_text = ecdict[clipboard_text].replace("\\n", "\n")
-        else:
-            texts = clipboard_text.split("\n\n")
-            translated_texts = []
-            for t in texts:
-                t = t.replace("\n", " ")
-                translated_texts.append(translator.translate(t))
-            translated_text = "\n\n".join(translated_texts)
-        self.textWindow = TextWindow(clipboard_text, translated_text)
         self.textWindow.show()
         self.esc_triggered.connect(self.textWindow.close)
         self.click_triggered.connect(self.textWindow.mouseClick)
