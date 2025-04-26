@@ -13,7 +13,7 @@ else:
 from PySide6.QtCore import Qt, QRect, QPoint, Signal, QEvent
 from PySide6.QtGui import (QGuiApplication, QPainter, QColor, QCursor, QMouseEvent)
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QDialog,
-                                QSystemTrayIcon, QMenu, QLabel, QStyle, QVBoxLayout)
+                                QSystemTrayIcon, QMenu, QLabel, QStyle, QVBoxLayout, QGraphicsDropShadowEffect)
 from pynput import mouse
 import keyboard
 from PIL import Image
@@ -40,6 +40,14 @@ class TextWindow(QWidget):
     def setup_ui(self):
         self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
+
+        # 添加蓝色阴影效果
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setColor(QColor("#2196f3"))
+        shadow.setBlurRadius(20)
+        shadow.setOffset(0, 0)  # 阴影无偏移，四周均匀分布
+        self.setGraphicsEffect(shadow)
+
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         self.content = QLabel(self)
@@ -50,7 +58,7 @@ class TextWindow(QWidget):
         else:
             self.content.setFixedWidth(config.getint('DEFAULT', 'copy_trans_fixed_width'))
             pad = 3
-        self.content.setStyleSheet(f"{config.get('DEFAULT', 'background_style')}padding: {pad}px;")
+        self.content.setStyleSheet(f"{config.get('DEFAULT', 'background_style')}padding: {pad}px;margin:20px;")
         
         self.trans_flag = True
         layout.addWidget(self.content)
@@ -62,10 +70,7 @@ class TextWindow(QWidget):
             mouse_pos = QCursor.pos()
             self.setFixedWidth(config.getint('DEFAULT', 'copy_trans_fixed_width'))
             self.move(mouse_pos)
-
         self.update()
-        # 处理未处理的事件
-        # QApplication.processEvents()
 
     def update_result(self, trans_result):
         self.trans_text = trans_result
