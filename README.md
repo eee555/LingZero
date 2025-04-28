@@ -45,7 +45,7 @@ tencent_secret_key = e******************************p
 
 ##  📈 效果展示
 
-<img src="pic/2.png" alt="" width="300">
+<img src="pic/2.png" alt="" width="600">
 
 ## 📦 TODO / 开发计划
 
