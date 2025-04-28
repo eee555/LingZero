@@ -14,6 +14,7 @@ from PySide6.QtCore import Qt, QRect, QPoint, Signal, QEvent
 from PySide6.QtGui import (QGuiApplication, QPainter, QColor, QCursor, QMouseEvent)
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QDialog,
                                 QSystemTrayIcon, QMenu, QLabel, QStyle, QVBoxLayout, QGraphicsDropShadowEffect)
+
 from pynput import mouse
 import keyboard
 from PIL import Image
@@ -37,16 +38,10 @@ class TextWindow(QWidget):
         self.scale_factor = screen.devicePixelRatio()
         trans.set_ui(self)
         
-    def setup_ui(self):
-        self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
 
-        # 添加蓝色阴影效果
-        shadow = QGraphicsDropShadowEffect(self)
-        shadow.setColor(QColor("#2196f3"))
-        shadow.setBlurRadius(20)
-        shadow.setOffset(0, 0)  # 阴影无偏移，四周均匀分布
-        self.setGraphicsEffect(shadow)
+    def setup_ui(self):
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setWindowFlags(Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -58,18 +53,34 @@ class TextWindow(QWidget):
         else:
             self.content.setFixedWidth(config.getint('DEFAULT', 'copy_trans_fixed_width'))
             pad = 3
-        self.content.setStyleSheet(f"{config.get('DEFAULT', 'background_style')}padding: {pad}px;margin:20px;")
-        
+
+        # QLabel样式：白色背景 + 圆角
+        self.content.setStyleSheet(f"""
+            QLabel {"{"}
+                {config.get('DEFAULT', 'background_style').strip("' ()[]" + '"')}
+                margin: 8px;
+                padding: {pad}px;
+            {"}"}
+        """)
+
+        # 创建阴影效果
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(15)  # 阴影模糊程度
+        shadow.setOffset(0, 0)     # 阴影不偏移
+        shadow.setColor(QColor(30, 144, 255, 180))  # 淡蓝色，透明度约70%
+        self.content.setGraphicsEffect(shadow)
+
         self.trans_flag = True
         layout.addWidget(self.content)
         self.setLayout(layout)
         self.drag_pos = None
         if self.position:
+            self.position.adjust(-8, -8, 8, 8)
             self.setGeometry(self.position)
         else:
             mouse_pos = QCursor.pos()
             self.setFixedWidth(config.getint('DEFAULT', 'copy_trans_fixed_width'))
-            self.move(mouse_pos)
+            self.move(mouse_pos + QPoint(-8, -8))
         self.update()
 
     def update_result(self, trans_result):
