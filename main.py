@@ -13,7 +13,8 @@ else:
 from PySide6.QtCore import Qt, QRect, QPoint, Signal, QEvent
 from PySide6.QtGui import (QGuiApplication, QPainter, QColor, QCursor, QMouseEvent)
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QDialog,
-                                QSystemTrayIcon, QMenu, QLabel, QStyle, QVBoxLayout, QGraphicsDropShadowEffect)
+                                QSystemTrayIcon, QMenu, QLabel, QStyle, QVBoxLayout, 
+                                QGraphicsDropShadowEffect)
 
 from pynput import mouse
 import keyboard
@@ -27,6 +28,7 @@ trans = Translator()
 
 # 翻译弹窗，用于展示翻译结果
 class TextWindow(QWidget):
+    open_or_close_triggered = Signal()
     def __init__(self, raw_text, position: QRect = None, parent=None):
         super(TextWindow, self).__init__(parent=parent)
         self.trans_text = ""
@@ -37,6 +39,8 @@ class TextWindow(QWidget):
         screen = QApplication.primaryScreen()
         self.scale_factor = screen.devicePixelRatio()
         trans.set_ui(self)
+        # 初始化标志变量，用于记录当前文本是否可复制
+        self.text_selectable = False
         
 
     def setup_ui(self):
@@ -74,6 +78,7 @@ class TextWindow(QWidget):
         layout.addWidget(self.content)
         self.setLayout(layout)
         self.drag_pos = None
+        # 移动窗口位置、调整窗口尺寸
         if self.position:
             self.position.adjust(-8, -8, 8, 8)
             self.setGeometry(self.position)
@@ -128,8 +133,15 @@ class TextWindow(QWidget):
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         self.drag_pos = None
-        if not self.drag_flag:
-            self.switch()
+        if event.button() == Qt.LeftButton:
+            if not self.drag_flag:
+                self.switch()
+        if event.button() == Qt.RightButton:
+            if not self.text_selectable:
+                self.content.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            else:
+                self.content.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
+            self.text_selectable = not self.text_selectable
     
     def mouseClick(self, x, y, name, flag):
         frame_rect = self.frameGeometry()
@@ -142,21 +154,20 @@ class TextWindow(QWidget):
         if not client_rect.contains(x, y):
             self.close()
 
-    # 全局事件过滤器
-    def eventFilter(self, obj, event: QEvent):
-        if event.type() == QEvent.WindowDeactivate:
-            self.close()
+    def showEvent(self, event):
+        self.open_or_close_triggered.emit()
+        super().showEvent(event)
 
-        # ESC键关闭
-        if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Escape:
-            self.close()
-            
-        return super().eventFilter(obj, event)
+    def closeEvent(self, event):
+        self.open_or_close_triggered.emit()
+        return super().closeEvent(event)
+
 
 # 全屏的截屏窗口，半透明，鼠标拖动框选截屏区域
 class ScreenShotWindow(QDialog):
     esc_triggered = Signal()
     click_triggered = Signal(int, int, str, bool)
+    text_window_open_or_close_triggered = Signal()
     def __init__(self):
         super().__init__()
         self.init_ui()
@@ -231,6 +242,7 @@ class ScreenShotWindow(QDialog):
         self.textWindow = TextWindow(text, rect)
         if not trans.translate(text):
             return
+        self.textWindow.open_or_close_triggered.connect(self.text_window_open_or_close_triggered.emit)
         self.textWindow.show()
         self.esc_triggered.connect(self.textWindow.close)
         self.click_triggered.connect(self.textWindow.mouseClick)
@@ -247,29 +259,30 @@ class TrayApp(QMainWindow):
         # self.tray.setIcon(QIcon("icon.png"))
         default_icon = QApplication.style().standardIcon(QStyle.SP_ComputerIcon)
         self.tray.setIcon(default_icon)
-        menu = QMenu()
-        menu.setStyleSheet("""
+        self.menu = QMenu()
+        self.menu.setStyleSheet("""
             QMenu::item {
                 padding: 5px 10px 5px 10px;
                 icon: none;
             }
         """)
-        a = menu.addAction(f"截屏翻译（{config.get('DEFAULT', 'capture_triggered_hotkey')}）")
+        a = self.menu.addAction(f"截屏翻译（{config.get('DEFAULT', 'capture_triggered_hotkey')}）")
         a.triggered.connect(self.capture)
-        a = menu.addAction(f"禁用复制翻译（{config.get('DEFAULT', 'stoptrans_triggered_hotkey')}）")
-        a.triggered.connect(self.on_hotkey_stoptrans)
-        exit_action = menu.addAction("退出")
+        self.action_stoptrans = self.menu.addAction(f"禁用复制翻译（{config.get('DEFAULT', 'stoptrans_triggered_hotkey')}）")
+        self.action_stoptrans.triggered.connect(self.on_hotkey_stoptrans)
+        exit_action = self.menu.addAction("退出")
         exit_action.triggered.connect(QApplication.quit)
         
-        self.tray.setContextMenu(menu)
+        self.tray.setContextMenu(self.menu)
         self.tray.show()
 
         self.capture_triggered.connect(self.capture)
-        self.clipboard_changed_triggered.connect(self.clipboard_changed_trans)
 
         capture_triggered_hotkeys = config.get('DEFAULT', 'capture_triggered_hotkey').split(",")
+        self.capture_handle_hotkeys = []
         for hotkey in capture_triggered_hotkeys:
-            keyboard.add_hotkey(hotkey, self.capture_triggered.emit)
+            self.capture_handle_hotkeys.append(
+                keyboard.add_hotkey(hotkey, self.capture_triggered.emit))
         self.stop_trans = False
         stoptrans_triggered_hotkeys = config.get('DEFAULT', 'stoptrans_triggered_hotkey').split(",")
         for hotkey in stoptrans_triggered_hotkeys:
@@ -277,8 +290,7 @@ class TrayApp(QMainWindow):
         keyboard.add_hotkey('esc', self.esc_triggered.emit)
 
         self.clipboard = QApplication.clipboard()
-        # 连接剪贴板的 dataChanged 信号到槽函数
-        self.clipboard.dataChanged.connect(self.clipboard_changed_triggered.emit)
+        self.on_hotkey_stoptrans()
 
         def on_click_wrapper(x, y, button, pressed):
             self.click_triggered.emit(x, y, button.name, pressed)
@@ -289,21 +301,31 @@ class TrayApp(QMainWindow):
         self.listener.start()
 
     def clipboard_changed_trans(self):
-        if self.stop_trans:
-            return
         clipboard_text = self.clipboard.text().strip()
         self.textWindow = TextWindow(clipboard_text)
         if not trans.translate(clipboard_text):
             return
+        self.textWindow.open_or_close_triggered.connect(self.on_hotkey_stoptrans)
         self.textWindow.show()
         self.esc_triggered.connect(self.textWindow.close)
         self.click_triggered.connect(self.textWindow.mouseClick)
         
+    # 启用/停用复制翻译
     def on_hotkey_stoptrans(self):
+        if self.stop_trans:
+            self.clipboard.dataChanged.disconnect(self.clipboard_changed_triggered.emit)
+            self.clipboard_changed_triggered.disconnect(self.clipboard_changed_trans)
+            self.action_stoptrans.setText(f"禁用复制翻译（{config.get('DEFAULT', 'stoptrans_triggered_hotkey')}）")
+        else:
+            self.clipboard.dataChanged.connect(self.clipboard_changed_triggered.emit)
+            self.clipboard_changed_triggered.connect(self.clipboard_changed_trans)
+            self.action_stoptrans.setText(f"启用复制翻译（{config.get('DEFAULT', 'stoptrans_triggered_hotkey')}）")
         self.stop_trans = not self.stop_trans
+
 
     def capture(self):
         self.shot_window = ScreenShotWindow()
+        self.shot_window.text_window_open_or_close_triggered.connect(self.on_hotkey_stoptrans)
         self.shot_window.show()
         self.click_triggered.connect(self.shot_window.click_triggered)
 
