@@ -1,7 +1,12 @@
 # LingZero
 
+[![](https://img.shields.io/github/release/eee555/LingZero.svg)](https://github.com/eee555/LingZero/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 ![UI](https://img.shields.io/badge/UI-PySide6-lightgrey.svg)
+[![pytesseract](https://img.shields.io/badge/Powered_by-pytesseract-brightgreen)](https://github.com/madmaze/pytesseract)
+[![ECDICT](https://img.shields.io/badge/Powered_by-ECDICT-brightgreen)](https://github.com/skywind3000/ECDICT)
+[![Argos_Translate](https://img.shields.io/badge/Powered_by-Argos_Translate-brightgreen)](https://github.com/argosopentech/argos-translate)
+[![](https://img.shields.io/github/downloads/eee555/LingZero/total.svg)](https://github.com/eee555/LingZero/wiki/Downloads-%E4%B8%8B%E8%BD%BD%E4%B8%8E%E5%AE%89%E8%A3%85)
 
 > 离线翻译 & 截屏翻译 & 复制翻译，轻巧强大，作者自用！
 
