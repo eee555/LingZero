@@ -4,16 +4,21 @@ from typing import List
 from . import ecdict, tencent, argos
 
 # 太长或太短，或英文占比没有达到60%，都不翻译
-def is_translation_needed(text) -> bool:
+def is_translation_needed(text, target = "zh") -> bool:
     total_chars = len(text)
     if not text or total_chars > 10000:
         return False
     # 复制了文件
     if r"///" in text:
         return False
-    english_chars = sum(1 for char in text if char.isalpha() and ('a' <= char.lower() <= 'z'))
-    percentage = english_chars / total_chars
-    return percentage >= 0.6
+    if target == "zh":
+        english_chars = sum(1 for char in text if char.isalpha() and ('a' <= char.lower() <= 'z'))
+        percentage = english_chars / total_chars
+        return percentage >= 0.6
+    elif target == "en":
+        english_chars = sum(1 for char in text if char.isalpha() and ('a' <= char.lower() <= 'z'))
+        percentage = english_chars / total_chars
+        return percentage <= 0.4
 
 def data_cleaning(text: str) -> List[str]:
     texts = text.split("\n\n")
@@ -35,7 +40,7 @@ class Translator():
     def notify(self, text: str):
         self.ui.update_result(text)
 
-    # 翻译段落、单词，结果为空表明不满足翻译要求
+    # 翻译英文段落、单词为中文，结果为空表明不满足翻译要求
     def translate(self, text) -> bool:
         if not is_translation_needed(text):
             return False

@@ -1,7 +1,9 @@
-import sys, os
+import sys, os, time
 import configparser
 config = configparser.ConfigParser()
 config.read('config.ini', encoding="utf-8")
+secret_config = configparser.ConfigParser()
+secret_config.read('secret.ini', encoding="utf-8")
 import pytesseract
 # 判断是开发环境还是生产环境
 if os.path.exists("./.github"):
@@ -16,15 +18,47 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QDialog,
                                 QSystemTrayIcon, QMenu, QLabel, QStyle, QVBoxLayout, 
                                 QGraphicsDropShadowEffect)
 
-from pynput import mouse
+from pynput import mouse as pynput_mouse
+from pynput import keyboard as pynput_keyboard
 import keyboard
+import pyperclip
 from PIL import Image
 import ctypes
+import win32clipboard
+import win32con
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
 
 from translator import Translator
 trans = Translator()
+
+from translator import tencent
+tencent_trans = tencent.Trans(secret_config)
+
+def wait_for_all_keys_up(timeout=2.0, interval=0.1):
+    """等待所有物理按键抬起（超时时间内）"""
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        if not any(keyboard.is_pressed(key) for key in keyboard.all_modifiers | set("abcdefghijklmnopqrstuvwxyz1234567890")):
+            return True
+        time.sleep(interval)
+    return False
+
+def copy_selected_text():
+    """模拟 Ctrl+C 并返回复制的文本"""
+    if not wait_for_all_keys_up():
+        return None
+    
+    # 模拟 Ctrl+C
+    keyboard.press('ctrl')
+    keyboard.press('c')
+    time.sleep(0.1)  # 等待复制完成
+    keyboard.release('c')
+    keyboard.release('ctrl')
+    
+    # 获取剪贴板内容
+    return pyperclip.paste()
+
 
 # 翻译弹窗，用于展示翻译结果
 class TextWindow(QWidget):
@@ -253,6 +287,7 @@ class TrayApp(QMainWindow):
     clipboard_changed_triggered = Signal()
     esc_triggered = Signal()
     click_triggered = Signal(int, int, str, bool)
+    copy_into_english_triggered = Signal()
     def __init__(self):
         super().__init__()
         self.tray = QSystemTrayIcon(self)
@@ -276,29 +311,39 @@ class TrayApp(QMainWindow):
         self.tray.setContextMenu(self.menu)
         self.tray.show()
 
+        # 连接截屏翻译
         self.capture_triggered.connect(self.capture)
-
         capture_triggered_hotkeys = config.get('DEFAULT', 'capture_triggered_hotkey').split(",")
         self.capture_handle_hotkeys = []
         for hotkey in capture_triggered_hotkeys:
             self.capture_handle_hotkeys.append(
                 keyboard.add_hotkey(hotkey, self.capture_triggered.emit))
         self.stop_trans = False
+
+        # 连接停止翻译
         stoptrans_triggered_hotkeys = config.get('DEFAULT', 'stoptrans_triggered_hotkey').split(",")
         for hotkey in stoptrans_triggered_hotkeys:
             keyboard.add_hotkey(hotkey, self.on_hotkey_stoptrans)
+
+        # 连接停止截屏
         keyboard.add_hotkey('esc', self.esc_triggered.emit)
+
+        # 连接将选中的中文转为英文
+        copy_into_english_triggered_hotkeys =\
+            config.get('DEFAULT', 'copy_into_english_triggered_hotkey').split(",")
+        for hotkey in copy_into_english_triggered_hotkeys:
+            keyboard.add_hotkey(hotkey, self.on_hotkey_copy_into_english)
 
         self.clipboard = QApplication.clipboard()
         self.on_hotkey_stoptrans()
 
+        # 创建鼠标监听器
         def on_click_wrapper(x, y, button, pressed):
             self.click_triggered.emit(x, y, button.name, pressed)
-        # 创建鼠标监听器
-        self.listener = mouse.Listener(
+        self.mouse_listener = pynput_mouse.Listener(
             on_click=on_click_wrapper,
         )
-        self.listener.start()
+        self.mouse_listener.start()
 
     def clipboard_changed_trans(self):
         clipboard_text = self.clipboard.text().strip()
@@ -322,7 +367,15 @@ class TrayApp(QMainWindow):
             self.action_stoptrans.setText(f"启用复制翻译（{config.get('DEFAULT', 'stoptrans_triggered_hotkey')}）")
         self.stop_trans = not self.stop_trans
 
-
+    # 将选中的中文转为英文快捷键，并原地粘贴，并修改剪切板
+    def on_hotkey_copy_into_english(self):
+        self.on_hotkey_stoptrans()
+        clipboard_text = copy_selected_text()
+        if trans_result := tencent_trans.translate(clipboard_text, target="en"):
+            pyperclip.copy(trans_result)
+            keyboard.press_and_release('ctrl+v')
+        self.on_hotkey_stoptrans()
+        
     def capture(self):
         self.shot_window = ScreenShotWindow()
         self.shot_window.text_window_open_or_close_triggered.connect(self.on_hotkey_stoptrans)

@@ -8,5 +8,8 @@ class Trans():
         if text in self.ecdict:
             translated_text = self.ecdict[text].replace("\\n", "\n")
             return translated_text
+        elif (text_lower := text.lower()) in self.ecdict:
+            translated_text = self.ecdict[text_lower].replace("\\n", "\n")
+            return translated_text
         else:
             return ""
