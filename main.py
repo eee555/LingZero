@@ -24,8 +24,6 @@ import keyboard
 import pyperclip
 from PIL import Image
 import ctypes
-import win32clipboard
-import win32con
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
 
