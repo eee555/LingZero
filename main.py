@@ -13,7 +13,7 @@ else:
     pytesseract.pytesseract.tesseract_cmd = r'./tesseract/tesseract.exe'
     os.environ["TESSDATA_PREFIX"] = r'./tesseract/tessdata'
 from PySide6.QtCore import Qt, QRect, QPoint, Signal, QEvent
-from PySide6.QtGui import (QGuiApplication, QPainter, QColor, QCursor, QMouseEvent)
+from PySide6.QtGui import (QGuiApplication, QPainter, QColor, QCursor, QMouseEvent, QIcon)
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QDialog,
                                 QSystemTrayIcon, QMenu, QLabel, QStyle, QVBoxLayout, 
                                 QGraphicsDropShadowEffect)
@@ -309,9 +309,7 @@ class TrayApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.tray = QSystemTrayIcon(self)
-        # self.tray.setIcon(QIcon("icon.png"))
-        default_icon = QApplication.style().standardIcon(QStyle.SP_ComputerIcon)
-        self.tray.setIcon(default_icon)
+        self.tray.setIcon(QIcon("a.ico"))
         self.menu = QMenu()
         self.menu.setStyleSheet("""
             QMenu::item {

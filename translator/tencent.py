@@ -27,7 +27,7 @@ class Trans():
 
         service = "tmt"
         host = "tmt.tencentcloudapi.com"
-        region = "ap-shanghai"
+        region = self.config.get('DEFAULT', 'tencent_region')
         version = "2018-03-21"
         action = "TextTranslate"
         if target == "zh":
