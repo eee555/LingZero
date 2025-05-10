@@ -48,17 +48,34 @@ def copy_selected_text():
     """模拟 Ctrl+C 并返回复制的文本"""
     if not wait_for_all_keys_up():
         return None
-    
     # 模拟 Ctrl+C
     keyboard.press('ctrl')
     keyboard.press('c')
     time.sleep(0.1)  # 等待复制完成
     keyboard.release('c')
     keyboard.release('ctrl')
-    
     # 获取剪贴板内容
     return pyperclip.paste()
 
+class RightClickIgnoreLabel(QLabel):
+    # 不处理右键鼠标事件的Qlabel
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    def mousePressEvent(self, event):
+        if event.button() == Qt.RightButton:
+            # 忽略右键事件，让其传递给父控件
+            event.ignore()
+        else:
+            # 其他按钮（如左键）使用默认处理方式
+            super().mousePressEvent(event)
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.RightButton:
+            event.ignore()
+        else:
+            super().mouseReleaseEvent(event)
+    def contextMenuEvent(self, event):
+        # 忽略上下文菜单事件，让其传递给父控件
+        event.ignore()
 
 # 翻译弹窗，用于展示翻译结果
 class TextWindow(QWidget):
@@ -83,7 +100,8 @@ class TextWindow(QWidget):
 
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        self.content = QLabel(self)
+        self.content = RightClickIgnoreLabel(self)
+        self.content.setContextMenuPolicy(Qt.NoContextMenu)
         if self.position:
             pad = min(self.position.width(), self.position.height())
             pad = int(pad / 10)
