@@ -172,6 +172,12 @@ class TextWindow(QWidget):
             # 首先设置固定尺寸，再设置最小尺寸，也就是取消固定尺寸，方便下次尺寸修改
             self.setFixedHeight(hint_size.height())
             self.setMinimumHeight(0)
+        else:
+            hint_size = self.content.sizeHint()
+            max_height = max(self.position.height(), hint_size.height())
+            self.setFixedHeight(max_height)
+            self.setMinimumHeight(0)
+
         self.trans_flag = not self.trans_flag
 
     # 窗口拖动逻辑（保持不变）
