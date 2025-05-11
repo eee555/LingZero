@@ -90,7 +90,7 @@ class TextWindow(QWidget):
         trans.set_ui(self)
         # 初始化标志变量，用于记录当前文本是否可复制
         self.text_selectable = False
-        
+        self.priority_level = 5
 
     def setup_ui(self):
         self.setAttribute(Qt.WA_TranslucentBackground)
@@ -138,7 +138,12 @@ class TextWindow(QWidget):
             self.move(mouse_pos + QPoint(-8, -8))
         self.update()
 
-    def update_result(self, trans_result):
+    def update_result(self, trans_result, priority_level = 3):
+        # 离线翻译的优先度为3，腾讯翻译为2，词典翻译为1，优先度越低越优先采用
+        if self.priority_level > priority_level:
+            self.priority_level = priority_level
+        else:
+            return
         self.trans_text = trans_result
         if len(self.trans_text) > 30:
             self.content.setAlignment(Qt.AlignLeft)
@@ -374,11 +379,11 @@ class TrayApp(QMainWindow):
         if self.stop_trans:
             self.clipboard.dataChanged.disconnect(self.clipboard_changed_triggered.emit)
             self.clipboard_changed_triggered.disconnect(self.clipboard_changed_trans)
-            self.action_stoptrans.setText(f"禁用复制翻译（{config.get('DEFAULT', 'stoptrans_triggered_hotkey')}）")
+            self.action_stoptrans.setText(f"启用复制翻译（{config.get('DEFAULT', 'stoptrans_triggered_hotkey')}）")
         else:
             self.clipboard.dataChanged.connect(self.clipboard_changed_triggered.emit)
             self.clipboard_changed_triggered.connect(self.clipboard_changed_trans)
-            self.action_stoptrans.setText(f"启用复制翻译（{config.get('DEFAULT', 'stoptrans_triggered_hotkey')}）")
+            self.action_stoptrans.setText(f"禁用复制翻译（{config.get('DEFAULT', 'stoptrans_triggered_hotkey')}）")
         self.stop_trans = not self.stop_trans
 
     # 将选中的中文转为英文快捷键，并原地粘贴，并修改剪切板

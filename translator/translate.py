@@ -1,8 +1,25 @@
 import configparser
 import concurrent.futures
-from typing import List
+from typing import List, Callable
 from . import ecdict, tencent, argos
+from threading import Thread
 
+class ResultThread(Thread):
+    def __init__(self, func, args):
+        super().__init__()
+        self.func = func
+        self.args = args
+        self.result = None
+
+    def run(self):
+        # 在线程启动时执行传入的函数，并保存结果
+        self.result = self.func(*self.args)
+
+    def join(self):
+        # 等待线程执行完毕，并返回结果
+        super().join()
+        return self.result
+    
 # 太长或太短，或英文占比没有达到60%，都不翻译
 def is_translation_needed(text, target = "zh") -> bool:
     total_chars = len(text)
@@ -21,10 +38,24 @@ def is_translation_needed(text, target = "zh") -> bool:
         return percentage <= 0.4
 
 def data_cleaning(text: str) -> List[str]:
-    texts = text.split("\n\n")
-    for (idt, text) in enumerate(texts):
-        texts[idt] = text.replace("\n", " ").strip("' \"[](){}")
-    return texts
+    fragments = text.split("\n\n")
+    for (idt, text) in enumerate(fragments):
+        fragments[idt] = text.replace("\n", " ").strip("' \"[](){}")
+    return fragments
+
+def super_translater(translate: Callable[[str], str], fragments: List[str],
+                      callback: Callable[[str, int], None], priority_level: int):
+    threads: List[ResultThread] = []
+    for fragment in fragments:
+        threads.append(ResultThread(func=translate, args=(fragment,)))
+    for thread in threads:
+        thread.start()
+    results = []
+    for thread in threads:
+        results.append(thread.join())
+    result = "\n\n".join(results).strip()
+    if result and not result.isascii():
+        callback(result, priority_level)
     
 class Translator():
     def __init__(self):
@@ -37,8 +68,8 @@ class Translator():
     def set_ui(self, ui):
         self.ui = ui
 
-    def notify(self, text: str):
-        self.ui.update_result(text)
+    def notify(self, text: str, priority_level: int):
+        self.ui.update_result(text, priority_level)
 
     # 翻译英文段落、单词为中文，结果为空表明不满足翻译要求
     def translate(self, text) -> bool:
@@ -47,30 +78,16 @@ class Translator():
         text_list = data_cleaning(text)
         if len(text_list) == 1:
             if trans_result := self.ecdict_trans.translate(text_list[0]):
-                self.notify(trans_result)
+                self.notify(trans_result, 1)
                 return True
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures_online = []
-            futures_local = []
-            for t in text_list:
-                future = executor.submit(self.tencent_trans.translate, t)
-                futures_online.append(future)
-            for t in text_list:
-                future = executor.submit(self.argos_trans.translate, t)
-                futures_local.append(future)
-            online_result = ""
-            local_result = ""
-            for future in futures_local:
-                r = future.result()
-                local_result += r + "\n\n"
-            local_result = local_result.strip()
-            self.notify(local_result)
-            for future in futures_online:
-                r = future.result()
-                online_result += r + "\n\n"
-            online_result = online_result.strip()
-            if not online_result.isascii():
-                self.notify(online_result)
-            return True
 
+        local_thread = ResultThread(func=super_translater, 
+                                    args=(self.argos_trans.translate, text_list, self.notify, 3))
+        tencent_thread = ResultThread(func=super_translater, 
+                                      args=(self.tencent_trans.translate, text_list, self.notify, 2))
+        local_thread.start()
+        tencent_thread.start()
+        local_thread.join()
+        tencent_thread.join()
+        return True
 
