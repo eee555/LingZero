@@ -30,7 +30,7 @@ kernel32 = ctypes.windll.kernel32
 from translator import Translator
 trans = Translator()
 
-from translator import tencent
+from translator import tencent, data_cleaning
 tencent_trans = tencent.Trans(secret_config)
 
 def wait_for_all_keys_up(timeout=2.0, interval=0.1):
@@ -299,12 +299,13 @@ class ScreenShotWindow(QDialog):
             byte_data,
             'raw', 'BGRX'  # 处理Qt的32-bit颜色格式
         )
-        text = pytesseract.image_to_string(pil_image, lang='eng').strip()
-        self.textWindow = TextWindow(text, rect)
-        if not trans.translate(text):
-            return
+        text = pytesseract.image_to_string(pil_image, lang='eng')
+        text_show = "\n\n".join(data_cleaning(text)).strip()
+        self.textWindow = TextWindow(text_show, rect)
         self.textWindow.open_or_close_triggered.connect(self.text_window_open_or_close_triggered.emit)
         self.textWindow.show()
+        if not trans.translate(text):
+            return
         self.esc_triggered.connect(self.textWindow.close)
         self.click_triggered.connect(self.textWindow.mouseClick)
 
