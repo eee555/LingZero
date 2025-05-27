@@ -15,19 +15,19 @@ def sign(key, msg):
     return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
 
 class Trans():
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, secret_config):
+        self.secret_config = secret_config
     def translate(self, input_text: str, target = "zh") -> str:
         # 实例化一个认证对象，入参需要传入腾讯云账户 SecretId 和 SecretKey，此处还需注意密钥对的保密
         # 代码泄露可能会导致 SecretId 和 SecretKey 泄露，并威胁账号下所有资源的安全性。以下代码示例仅供参考，建议采用更安全的方式来使用密钥，请参见：https://cloud.tencent.com/document/product/1278/85305
         # 密钥可前往官网控制台 https://console.cloud.tencent.com/cam/capi 进行获取
-        secret_id = self.config.get('DEFAULT', 'tencent_secret_id')
-        secret_key = self.config.get('DEFAULT', 'tencent_secret_key')
+        secret_id = self.secret_config.get('DEFAULT', 'tencent_secret_id')
+        secret_key = self.secret_config.get('DEFAULT', 'tencent_secret_key')
         token = ""
 
         service = "tmt"
         host = "tmt.tencentcloudapi.com"
-        region = self.config.get('DEFAULT', 'tencent_region')
+        region = self.secret_config.get('DEFAULT', 'tencent_region')
         version = "2018-03-21"
         action = "TextTranslate"
         if target == "zh":

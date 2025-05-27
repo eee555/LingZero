@@ -3,7 +3,18 @@ import configparser
 config = configparser.ConfigParser()
 config.read('config.ini', encoding="utf-8")
 secret_config = configparser.ConfigParser()
-secret_config.read('secret.ini', encoding="utf-8")
+if not os.path.exists('secret.ini'):
+    # 创建默认配置
+    secret_config['DEFAULT'] = {
+        'tencent_secret_id': 'A*********************************ZO',
+        'tencent_secret_key': 'e******************************p',
+        'tencent_region': 'ap-shanghai'
+    }
+    # 写入配置文件
+    with open('secret.ini', 'w', encoding='utf-8') as f:
+        secret_config.write(f)
+else:
+    secret_config.read('secret.ini', encoding="utf-8")
 import pytesseract
 # 判断是开发环境还是生产环境
 if os.path.exists("./.github"):
