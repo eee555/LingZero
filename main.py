@@ -314,9 +314,9 @@ class ScreenShotWindow(QDialog):
         text_show = "\n\n".join(data_cleaning(text)).strip()
         self.textWindow = TextWindow(text_show, rect)
         self.textWindow.open_or_close_triggered.connect(self.text_window_open_or_close_triggered.emit)
-        self.textWindow.show()
         if not trans.translate(text):
             return
+        self.textWindow.show()
         self.esc_triggered.connect(self.textWindow.close)
         self.click_triggered.connect(self.textWindow.mouseClick)
 
@@ -364,6 +364,15 @@ class TrayApp(QMainWindow):
 
         # 连接停止截屏
         keyboard.add_hotkey('esc', self.esc_triggered.emit)
+
+        # 解决https://github.com/eee555/LingZero/issues/2
+        # 造成锁屏唤醒后快捷键失效的原因是，keyboard内部记录按下按键的元组在锁屏快捷键按下时，
+        # 记录了按键，但弹起时，由于此时已经锁屏，因此无法清空元组。
+        # 解决方法是绑定此快捷键，触发时便清空。
+        def clear_pressed_events():
+            with keyboard._pressed_events_lock:
+                keyboard._pressed_events.clear()
+        keyboard.add_hotkey('windows+l', clear_pressed_events)
 
         # 连接将选中的中文转为英文
         copy_into_english_triggered_hotkeys =\
