@@ -1,3 +1,4 @@
+current_version = "1.5"
 import sys, os, time
 import configparser
 import gc
@@ -24,14 +25,14 @@ if os.path.exists("./.github"):
 else:
     pytesseract.pytesseract.tesseract_cmd = r'./tesseract/tesseract.exe'
     os.environ["TESSDATA_PREFIX"] = r'./tesseract/tessdata'
-from PySide6.QtCore import Qt, QRect, QPoint, Signal, QEvent
-from PySide6.QtGui import (QGuiApplication, QPainter, QColor, QCursor, QMouseEvent, QIcon)
+from PySide6.QtCore import Qt, QRect, QPoint, Signal, QEvent, QUrl
+from PySide6.QtGui import QGuiApplication, QPainter, QColor, QCursor, QMouseEvent, QIcon, QDesktopServices
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QDialog,
                                 QSystemTrayIcon, QMenu, QLabel, QStyle, QVBoxLayout, 
                                 QGraphicsDropShadowEffect)
 
 from pynput import mouse as pynput_mouse
-from pynput import keyboard as pynput_keyboard
+# from pynput import keyboard as pynput_keyboard
 import keyboard
 import pyperclip
 from PIL import Image
@@ -341,6 +342,8 @@ class TrayApp(QMainWindow):
                 icon: none;
             }
         """)
+        a = self.menu.addAction(f"检查更新（当前 V{current_version}）")
+        a.triggered.connect(lambda: QDesktopServices.openUrl(QUrl("https://github.com/eee555/LingZero")))
         a = self.menu.addAction(f"截屏翻译（{config.get('DEFAULT', 'capture_triggered_hotkey')}）")
         a.triggered.connect(self.capture)
         self.action_stoptrans = self.menu.addAction(f"禁用复制翻译（{config.get('DEFAULT', 'stoptrans_triggered_hotkey')}）")
