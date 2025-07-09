@@ -1,5 +1,6 @@
 import sys, os, time
 import configparser
+import gc
 config = configparser.ConfigParser()
 config.read('config.ini', encoding="utf-8")
 secret_config = configparser.ConfigParser()
@@ -246,7 +247,7 @@ class ScreenShotWindow(QDialog):
         self.start_point = QPoint()
         self.end_point = QPoint()
         self.dragging = False
-        keyboard.add_hotkey('esc',  self.on_hotkey_close)
+        self.handle_esc_hotkey = keyboard.add_hotkey('esc',  self.on_hotkey_close)
         self.esc_triggered.connect(self.close)
 
     def init_ui(self):
@@ -292,6 +293,7 @@ class ScreenShotWindow(QDialog):
         if event.button() == Qt.MouseButton.LeftButton:
             self.dragging = False
             self.close()
+            keyboard.remove_hotkey(self.handle_esc_hotkey)
             self.capture_selected_area()
 
     def capture_selected_area(self):
@@ -319,6 +321,7 @@ class ScreenShotWindow(QDialog):
         self.textWindow.show()
         self.esc_triggered.connect(self.textWindow.close)
         self.click_triggered.connect(self.textWindow.mouseClick)
+        gc.collect()
 
 # 主程序，启动后直接缩小到托盘
 class TrayApp(QMainWindow):
