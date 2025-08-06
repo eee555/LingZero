@@ -69,8 +69,9 @@
 ## 👣 安装步骤
 
 1. 从[发行版](https://github.com/eee555/LingZero/releases)下载最新版，解压后放到合适的位置。
-2. 【推荐】打开目录，右键`translation.exe`，点击`显示更多选项`->`固定到任务栏`。
-3. 【可选】假如要使用腾讯翻译，打开"secret.ini"文件如下，前往[腾讯云官网](https://console.cloud.tencent.com/cam/capi)免费领取个人令牌，并填写在文件中。
+2. 打开LingZero文件夹，打开config.ini，按照习惯的配置自行修改键位。
+3. 【推荐】右键`translation.exe`，点击`显示更多选项`->`固定到任务栏`。
+4. 【可选】假如要使用腾讯翻译，打开"secret.ini"文件如下，前往[腾讯云官网](https://console.cloud.tencent.com/cam/capi)免费领取个人令牌，并填写在文件中。
 ```
 [DEFAULT]
 tencent_secret_id  = A*********************************ZO
