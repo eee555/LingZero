@@ -22,7 +22,7 @@
 - 📋 **复制翻译**：复制即翻译，提升阅读效率。
 - 💎 **词典翻译**：翻译单个词语（或短语）时，首选调用词典翻译，直接查询本地词典，包含690000个单词或短语（基于[ECDICT](https://github.com/skywind3000/ECDICT)）。
 - 🧠 **离线翻译**：翻译段落或句子时，集成深度学习翻译引擎（基于 [Argos Translate](https://github.com/argosopentech/argos-translate)）。
-- 🐧 **腾讯翻译**：翻译段落或句子时，假如联网，还能调用腾讯翻译（每月500万字免费，含标点），自动优化翻译结果。
+- 🐧 **腾讯翻译**：翻译段落或句子时，假如联网，还能调用腾讯翻译（每月500万字免费，含标点，默认设置下超出不偷偷扣费），自动优化翻译结果。
 - 💨 **中文改写英文**：选中一段可编辑的中文文本，按下快捷键，就可以直接将其改为英文，并且剪贴板同步修改。假如要用英文关键词搜索、回帖，非常方便。此功能必须联网使用。
 - 🚗 **关键性能**：占用磁盘约800M、内存700M。翻译单词可瞬时出结果；翻译段落时，首次翻译延时约3秒、之后每次延时约1秒。
 
@@ -30,7 +30,7 @@
 
 ## 💯 翻译质量测评
 
-以 Attention Is All You Need 前三句话为例：
+以 `Attention Is All You Need` 前三句话为例：
 
 > The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.
 
@@ -40,15 +40,15 @@
 
 - LingZero-离线：主导序列转录模型基于复杂的反复或演化神经网络,其中包括一个编码器和一个解码器. 性能最好的模型也通过注意机制连接编码器和解码器. 我们提出一个新的简单的网络架构,即变形器, 完全基于关注机制, 完全不重复和演变。
 
-- Chatgpt 3.5：主流的序列转换模型通常基于复杂的循环神经网络（RNN）或卷积神经网络（CNN），这些模型包括一个编码器和一个解码器。性能最好的模型还通过注意力机制将编码器和解码器连接起来。我们提出了一种全新的、结构简单的网络架构——Transformer，它完全基于注意力机制，彻底摒弃了循环和卷积结构。
-
-- Deepseek-R1：主流的序列转导模型基于复杂的循环或卷积神经网络，这些网络通常包含编码器和解码器结构。性能最佳的模型还通过注意力机制连接编码器和解码器。我们提出了一种名为Transformer的新型简单网络架构，该架构完全基于注意力机制，彻底舍弃了循环与卷积结构。
-
-- 文心一言4.5：主流的序列转换模型基于复杂的循环神经网络或卷积神经网络构建，这些网络包含编码器（encoder）和解码器（decoder）两部分。性能最优的模型还通过注意力机制（attention mechanism）将编码器和解码器连接起来。我们提出了一种全新的简单网络架构——Transformer，它完全基于注意力机制构建，彻底摒弃了循环结构和卷积操作。
-
 - 有道翻译：主流的序列转换模型基于复杂的循环神经网络或卷积神经网络，这些网络包含编码器和解码器。表现最佳的模型还通过注意力机制将编码器和解码器连接起来。我们提出了一种新的简单网络架构——Transformer，它完全基于注意力机制，摒弃了循环和卷积。
 
 - Deepl：主导的序列转换模型基于复杂的循环或卷积神经网络，这些网络包含编码器和解码器。性能最佳的模型还通过注意力机制将编码器和解码器连接起来。我们提出了一种新的简单网络架构——Transformer，该架构仅基于注意力机制，完全摒弃了循环和卷积。
+
+- 文心一言4.5：主流的序列转换模型基于复杂的循环神经网络或卷积神经网络构建，这些网络包含编码器（encoder）和解码器（decoder）两部分。性能最优的模型还通过注意力机制（attention mechanism）将编码器和解码器连接起来。我们提出了一种全新的简单网络架构——Transformer，它完全基于注意力机制构建，彻底摒弃了循环结构和卷积操作。
+
+- Chatgpt 3.5：主流的序列转换模型通常基于复杂的循环神经网络（RNN）或卷积神经网络（CNN），这些模型包括一个编码器和一个解码器。性能最好的模型还通过注意力机制将编码器和解码器连接起来。我们提出了一种全新的、结构简单的网络架构——Transformer，它完全基于注意力机制，彻底摒弃了循环和卷积结构。
+
+- Deepseek-R1：主流的序列转导模型基于复杂的循环或卷积神经网络，这些网络通常包含编码器和解码器结构。性能最佳的模型还通过注意力机制连接编码器和解码器。我们提出了一种名为Transformer的新型简单网络架构，该架构完全基于注意力机制，彻底舍弃了循环与卷积结构。
 
 ## ✅ 推荐使用的场景或用户
 
@@ -69,7 +69,8 @@
 ## 👣 安装步骤
 
 1. 从[发行版](https://github.com/eee555/LingZero/releases)下载最新版，解压后放到合适的位置。
-2. 假如要使用腾讯翻译，打开"secret.ini"文件如下，前往[腾讯云官网](https://console.cloud.tencent.com/cam/capi)免费领取个人令牌，并填写在文件中。
+2. 【推荐】打开目录，右键`translation.exe`，点击`显示更多选项`->`固定到任务栏`。
+3. 【可选】假如要使用腾讯翻译，打开"secret.ini"文件如下，前往[腾讯云官网](https://console.cloud.tencent.com/cam/capi)免费领取个人令牌，并填写在文件中。
 ```
 [DEFAULT]
 tencent_secret_id  = A*********************************ZO
