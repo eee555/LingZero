@@ -179,3 +179,5 @@ secret.*
 *.exe
 temp*.*
 *.wav
+
+todo.md

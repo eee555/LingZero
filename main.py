@@ -3,14 +3,58 @@ import sys, os, time
 import configparser
 import gc
 config = configparser.ConfigParser()
-config.read('config.ini', encoding="utf-8")
+
+
+if not os.path.exists('config.ini'):
+    # 创建默认配置
+    config['DEFAULT'] = {
+        'copy_trans_fixed_width': '300',
+        'background_style': '"background-color:rgb(255, 255, 255); border-radius: 3px; color: black; font-size: 16px;"',
+        'capture_triggered_hotkey': 'ctrl+space,ctrl+b,ctrl+k,alt+shift+m',
+        'copy_triggered_hotkey': 'ctrl+shift+d,ctrl+8',
+        'copy_into_english_triggered_hotkey': 'alt+c,alt+v',
+        'stoptrans_triggered_hotkey': 'ctrl+1,f8',
+        'text_selectable_triggered_hotkey': 'a,z,space',
+        'deepseek_trans_prompt_en_to_zh': '请将以下英文文本翻译成中文，保持原意不变，尽量简洁：',
+
+    }
+
+    # 写入配置文件，并包含注释
+    with open('config.ini', 'w', encoding='utf-8') as f:
+        f.write('''[DEFAULT]
+; 复制翻译时，悬浮窗的宽度（固定），但由于有外边距，实际显示要少16
+copy_trans_fixed_width = 300
+; 翻译弹窗的样式。修改margin和padding样式可能导致意料之外的后果
+background_style = "background-color:rgb(255, 255, 255); border-radius: 3px; color: black; font-size: 16px;"
+; 截图的快捷键，可以设置多个，逗号分隔
+capture_triggered_hotkey = ctrl+space,ctrl+b,ctrl+k,alt+shift+m
+; 截图复制的快捷键，可以设置多个，逗号分隔（未实现）
+copy_triggered_hotkey = ctrl+shift+d,ctrl+8
+; 将选中的中文转为英文快捷键，并原地粘贴，并修改剪切板的快捷键，该功能使用腾讯翻译，
+; 可以设置多个，逗号分隔
+copy_into_english_triggered_hotkey = alt+c,alt+v
+; 停用/启用复制翻译的快捷键，可以设置多个，逗号分隔
+stoptrans_triggered_hotkey = ctrl+1,f8
+; （废弃，改为右键）悬浮窗的文本内容改为可复制的快捷键，可以设置多个，逗号分隔
+text_selectable_triggered_hotkey = a,z,space
+; DeepSeek API （deepseek-chat 3.2）翻译提示词 - 英文转中文
+deepseek_trans_prompt_en_to_zh = "请将以下英文文本翻译成中文，保持原意不变，尽量简洁："
+
+'''     )
+else:
+    config.read('config.ini', encoding="utf-8")
+
 secret_config = configparser.ConfigParser()
 if not os.path.exists('secret.ini'):
     # 创建默认配置
     secret_config['DEFAULT'] = {
         'tencent_secret_id': 'A*********************************ZO',
         'tencent_secret_key': 'e******************************p',
-        'tencent_region': 'ap-shanghai'
+        'tencent_region': 'ap-shanghai',
+        # 'ollama_base_url': 'http://localhost:11434',
+        # 'ollama_model': '',
+        # ollama 本地模型，暂未实现
+        'deepseek_api_key': '',
     }
     # 写入配置文件
     with open('secret.ini', 'w', encoding='utf-8') as f:
@@ -151,8 +195,8 @@ class TextWindow(QWidget):
             self.move(mouse_pos + QPoint(-8, -8))
         self.update()
 
-    def update_result(self, trans_result, priority_level = 3):
-        # 离线翻译的优先度为3，腾讯翻译为2，词典翻译为1，优先度越低越优先采用
+    def update_result(self, trans_result, priority_level = 4):
+        # 离线翻译的优先度为4，腾讯翻译为3，DeepSeek为2，词典翻译为1，优先度越低越优先采用
         if self.priority_level > priority_level:
             self.priority_level = priority_level
         else:
@@ -218,13 +262,15 @@ class TextWindow(QWidget):
             self.text_selectable = not self.text_selectable
     
     def mouseClick(self, x, y, name, flag):
+
+        # 使用 Qt 的框架几何获取窗口在屏幕上的真实位置确保与界面坐标一致    
+        # 处理鼠标点击事件，判断是否点击在窗口外以关闭窗口
+
         frame_rect = self.frameGeometry()
-        # 修正缩放后的真实像素范围
-        real_left = frame_rect.x() * self.scale_factor
-        real_top = frame_rect.y() * self.scale_factor
-        real_width = frame_rect.width() * self.scale_factor
-        real_height = frame_rect.height() * self.scale_factor
-        client_rect = QRect(real_left, real_top, real_width, real_height)
+        client_rect = QRect(frame_rect.x(), frame_rect.y(), 
+                           frame_rect.width(), frame_rect.height())
+        
+        # 直接判断点击坐标是否在窗口范围内（不需要缩放，因为使用 Qt 坐标系统）
         if not client_rect.contains(x, y):
             self.close()
 
@@ -251,16 +297,24 @@ class ScreenShotWindow(QDialog):
         self.handle_esc_hotkey = keyboard.add_hotkey('esc',  self.on_hotkey_close)
         self.esc_triggered.connect(self.close)
 
+    def get_screen_at_point(self, point):
+        """获取包含指定点的屏幕"""
+        for screen in QGuiApplication.screens():
+            if screen.geometry().contains(point):
+                return screen
+        return QGuiApplication.primaryScreen()
+
     def init_ui(self):
         # 设置窗口属性
         self.setWindowFlags(Qt.Tool | Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
-        self.screen = QGuiApplication.primaryScreen()
+        # 获取鼠标所在屏幕
+        mouse_pos = QCursor.pos()
+        self.screen = self.get_screen_at_point(mouse_pos)
 
-        # 获取主屏幕尺寸并全屏显示
-        screen = QGuiApplication.primaryScreen().geometry()
-        self.setGeometry(screen)
+        # 获取鼠标所在屏幕尺寸并全屏显示
+        self.setGeometry(self.screen.geometry())
         self.show()
 
     def on_hotkey_close(self):
@@ -273,8 +327,18 @@ class ScreenShotWindow(QDialog):
         painter.drawRect(self.rect())
 
         if self.dragging:
-            # 绘制选择框
-            rect = QRect(self.start_point, self.end_point).normalized()
+            # 绘制选择框，坐标需要相对于当前窗口（屏幕）左上角
+            screen_rect = self.screen.geometry()
+            local_start = QPoint(
+                self.start_point.x() - screen_rect.x(),
+                self.start_point.y() - screen_rect.y()
+            )
+            local_end = QPoint(
+                self.end_point.x() - screen_rect.x(),
+                self.end_point.y() - screen_rect.y()
+            )
+            
+            rect = QRect(local_start, local_end).normalized()
             painter.setPen(Qt.GlobalColor.white)
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawRect(rect)
@@ -301,10 +365,21 @@ class ScreenShotWindow(QDialog):
         # 获取选中的矩形区域
         rect = QRect(self.start_point, self.end_point).normalized()
         # 截取屏幕图像
-        screen = QGuiApplication.primaryScreen()
         if rect.width() < 5 or rect.height() < 5:
             return
-        screenshot = screen.grabWindow(0, rect.x(), rect.y(), rect.width(), rect.height())
+        
+        # 确保在正确的屏幕上截图
+        screen = self.get_screen_at_point(rect.topLeft())
+        # 调整截图坐标，相对于屏幕左上角
+        screen_rect = screen.geometry()
+        adjusted_rect = QRect(
+            rect.x() - screen_rect.x(),
+            rect.y() - screen_rect.y(),
+            rect.width(),
+            rect.height()
+        )
+        
+        screenshot = screen.grabWindow(0, adjusted_rect.x(), adjusted_rect.y(), adjusted_rect.width(), adjusted_rect.height())
         qimage = screenshot.toImage()
         byte_data = qimage.constBits().tobytes()
         pil_image = Image.frombytes(
@@ -334,7 +409,13 @@ class TrayApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.tray = QSystemTrayIcon(self)
-        self.tray.setIcon(QIcon("a.ico"))
+        icon = QIcon("a.ico")
+        if icon.isNull():  # 如果图标文件不存在或无效，则使用系统默认图标
+            icon = self.style().standardIcon(QStyle.SP_ComputerIcon)
+        self.tray.setIcon(icon)  
+        # md 
+        # 我之前打开exe时应用没有显示在托盘但是它已经创建了 QApplication；进入了 app.exec() 的循环并且可以正常用快捷键截图
+        # 我找这个没有显示在托盘的bug找了1个小时,后来才发现是没有a.ico图标文件
         self.menu = QMenu()
         self.menu.setStyleSheet("""
             QMenu::item {
@@ -391,7 +472,12 @@ class TrayApp(QMainWindow):
 
         # 创建鼠标监听器
         def on_click_wrapper(x, y, button, pressed):
-            self.click_triggered.emit(x, y, button.name, pressed)
+
+            # 使用 QCursor.pos() 替换 pynput 的坐标，确保与 Qt 坐标系统一致
+            # （转换 pynput 坐标到 Qt 坐标系统，解决高 DPI 缩放和多屏幕环境下的坐标不匹配问题）
+            qt_pos = QCursor.pos()
+            self.click_triggered.emit(qt_pos.x(), qt_pos.y(), button.name, pressed)
+            
         self.mouse_listener = pynput_mouse.Listener(
             on_click=on_click_wrapper,
         )
