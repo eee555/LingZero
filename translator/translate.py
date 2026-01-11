@@ -1,7 +1,7 @@
 import configparser
 import concurrent.futures
 from typing import List, Callable
-from . import ecdict, tencent, argos
+from . import ecdict, tencent, argos, deepseek
 from threading import Thread
 
 class ResultThread(Thread):
@@ -59,35 +59,58 @@ def super_translater(translate: Callable[[str], str], fragments: List[str],
     
 class Translator():
     def __init__(self):
+        self.secret_config = configparser.ConfigParser()
+        self.secret_config.read('secret.ini', encoding="utf-8")
+        
         self.config = configparser.ConfigParser()
-        self.config.read('secret.ini', encoding="utf-8")
+        self.config.read('config.ini', encoding="utf-8")
+        
         self.ecdict_trans = ecdict.Trans()
-        self.tencent_trans = tencent.Trans(self.config)
+        self.tencent_trans = tencent.Trans(self.secret_config)
         self.argos_trans = argos.Trans()
+        self.deepseek_trans = deepseek.Trans(self.secret_config, self.config)
 
     def set_ui(self, ui):
         self.ui = ui
 
     def notify(self, text: str, priority_level: int):
+        # 调试信息：打印翻译结果和优先级
+        print(f"翻译结果（优先级 {priority_level}）: {text}")
         self.ui.update_result(text, priority_level)
 
     # 翻译英文段落、单词为中文，结果为空表明不满足翻译要求
     def translate(self, text) -> bool:
+        # 调试信息：打印原始文本
+        print(f"原始文本: {text}")
+        
         if not is_translation_needed(text):
+            print("文本不满足翻译要求")
             return False
+            
         text_list = data_cleaning(text)
+        print(f"清洗后的文本片段: {text_list}")
+        
         if len(text_list) == 1:
             if trans_result := self.ecdict_trans.translate(text_list[0]):
+                print(f"词典翻译结果: {trans_result}")
                 self.notify(trans_result, 1)
                 return True
 
-        local_thread = ResultThread(func=super_translater, 
-                                    args=(self.argos_trans.translate, text_list, self.notify, 3))
+        # 翻译优先级：离线翻译(4) > 腾讯翻译(3) > DeepSeek(2) > 词典翻译(1)，优先级越低越优先
+        print("开始多线程翻译...")
+        argos_thread = ResultThread(func=super_translater, 
+                                    args=(self.argos_trans.translate, text_list, self.notify, 4))
         tencent_thread = ResultThread(func=super_translater, 
-                                      args=(self.tencent_trans.translate, text_list, self.notify, 2))
-        local_thread.start()
+                                      args=(self.tencent_trans.translate, text_list, self.notify, 3))
+        deepseek_thread = ResultThread(func=super_translater, 
+                                       args=(self.deepseek_trans.translate, text_list, self.notify, 2))
+        argos_thread.start()
         tencent_thread.start()
-        local_thread.join()
+        deepseek_thread.start()
+        argos_thread.join()
         tencent_thread.join()
+        deepseek_thread.join()
+        
+        print("翻译完成")
         return True
 
