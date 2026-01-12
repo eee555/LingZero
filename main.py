@@ -1,4 +1,4 @@
-current_version = "1.5"
+current_version = "1.6"
 import sys, os, time
 import configparser
 import gc
@@ -423,7 +423,7 @@ class TrayApp(QMainWindow):
                 icon: none;
             }
         """)
-        a = self.menu.addAction(f"检查更新（当前 V{current_version}）")
+        a = self.menu.addAction(f"检查更新（当前 Version {current_version}）")
         a.triggered.connect(lambda: QDesktopServices.openUrl(QUrl("https://github.com/eee555/LingZero")))
         a = self.menu.addAction(f"截屏翻译（{config.get('DEFAULT', 'capture_triggered_hotkey')}）")
         a.triggered.connect(self.capture)

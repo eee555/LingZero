@@ -5,6 +5,7 @@ class Trans():
         langs = translate.get_installed_languages()
         if not langs:
             from argostranslate import package
+            # 此类模型下载地址 https://www.argosopentech.com/argospm/index/
             model_path = './translate-en_zh-1_9.argosmodel'  # 替换为你的模型文件路径
             package.install_from_path(model_path)
             langs = translate.get_installed_languages()
