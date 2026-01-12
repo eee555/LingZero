@@ -1,4 +1,5 @@
 current_version = "1.6"
+from PySide6.QtNetwork import QLocalServer, QLocalSocket
 import sys, os, time
 import configparser
 import gc
@@ -522,6 +523,19 @@ class TrayApp(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+    # 保证只有一个实例，防止多开，产生多个弹窗
+    server_name = "LingZero_SingleInstance"
+    socket = QLocalSocket()
+    socket.connectToServer(server_name)
+    if socket.waitForConnected(100):
+        # 已经有实例在运行
+        sys.exit(0)
+    # 否则创建本实例的 server
+    server = QLocalServer()
+    QLocalServer.removeServer(server_name)   # 清理异常残留
+    server.listen(server_name)
+
     app.setQuitOnLastWindowClosed(False)
     # Windows任务栏图标设置
     from ctypes import windll
