@@ -25,8 +25,7 @@
 - 🐧 **腾讯翻译**：翻译段落或句子时，假如联网，还能调用腾讯翻译（每月500万字免费，含标点，默认设置下超出不偷偷扣费），自动优化翻译结果。
 - 🤖 **DeepSeek API翻译**：支持接入DeepSeek API进行翻译，可自定义翻译提示词，提供高质量翻译。
 - 💨 **中文改写英文**：选中一段可编辑的中文文本，按下快捷键，就可以直接将其改为英文，并且剪贴板同步修改。假如要用英文关键词搜索、回帖，非常方便。此功能必须联网使用。
-- 🚗 **关键性能**：占用磁盘约800M、内存700M。翻译单词可瞬时出结果；翻译段落时，首次翻译延时约3秒、之后每次延时约1秒。
-- 🔍 **调试功能**：提供详细的翻译过程调试信息输出。
+- 🚗 **关键性能**：占用磁盘约925M、内存700M。翻译单词可瞬时出结果；翻译段落时，首次翻译延时约3秒、之后每次延时约1秒。
 
 * *使用教程及快捷键配置见`config.ini`，如不习惯可自行修改*
 
@@ -36,7 +35,7 @@
 
 > The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely.
 
-将各个软件的翻译结果列举如下，供用户对比：
+各种翻译方式结果列举如下：
 
 - LingZero-腾讯api：主要的序列转换模型基于复杂的循环或卷积神经网络，其中包括编码器和解码器。性能最好的模型还通过注意力机制连接编码器和解码器。我们提出了一个新的简单的网络架构，Transformer，完全基于注意力机制，完全免除递归和卷积。
 
@@ -51,6 +50,8 @@
 - Chatgpt 3.5：主流的序列转换模型通常基于复杂的循环神经网络（RNN）或卷积神经网络（CNN），这些模型包括一个编码器和一个解码器。性能最好的模型还通过注意力机制将编码器和解码器连接起来。我们提出了一种全新的、结构简单的网络架构——Transformer，它完全基于注意力机制，彻底摒弃了循环和卷积结构。
 
 - Deepseek-R1：主流的序列转导模型基于复杂的循环或卷积神经网络，这些网络通常包含编码器和解码器结构。性能最佳的模型还通过注意力机制连接编码器和解码器。我们提出了一种名为Transformer的新型简单网络架构，该架构完全基于注意力机制，彻底舍弃了循环与卷积结构。
+
+大模型的翻译质量最高，腾讯、有道、Deepl等传统api其次。离线翻译虽然质量最差，但是可靠性最高。
 
 ## ✅ 推荐使用的场景或用户
 
@@ -210,24 +211,33 @@ deepseek_api_key =
 
 ---
 
-# 运行（自己替换路径）
+# 调试运行
 
-1. 安装 D:\Tesseract-OCR （可以发行版找到tesseract文件夹，改名为Tesseract-OCR放在d盘）
+1. 安装`D:\Tesseract-OCR`，可以发行版找到tesseract文件夹，改名为`Tesseract-OCR`放在d盘
 
-2. cd C:\Users\jim\git\LingZero ; .\.venv\Scripts\activate ; python main.py
+2. 下载`translate-en_zh-1_9.argosmodel`模型文件，可以发行版找到此文件，也可以从[此处](https://www.argosopentech.com/argospm/index/)下载
+
+3. 运行命令：
+
+    > cd C:\Users\jim\git\LingZero  
+    .\\.venv\Scripts\activate  
+    python main.py
 
 
-# 编译打包 （自己替换路径）
 
-## 前提 （自己替换路径）
+# 编译打包
+
+您可以下载发行版，也可以按照以下步骤自行打包，达到相同的效果。
+
+## 前提
 1. 下载发行版
 2. 激活安装依赖的venv环境
 
-## 打包指令（自己替换路径）
+## 打包指令
 
 cd "c:\Users\jim\git\LingZero"; python -m PyInstaller -w main.py -i "./a.ico" --add-data "./config.ini;." --onedir --noconfirm --name translation
 
-## 打包后（此步取决于你的spec有没有复制文件） （自己替换路径）
+## 打包后（此步取决于你的spec有没有复制文件）
 1. 发行版找到tesseract文件夹，放在C:\Users\jim\git\LingZero\dist\translation\
 2. 发行版找到translate-en_zh-1_9.argosmodel，ecdict.json ,a.ico文件，放在C:\Users\jim\git\LingZero\dist\translation
 
